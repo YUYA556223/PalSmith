@@ -19,20 +19,28 @@ local CANDIDATES = {
     "/Script/Pal.PalWeaponBase:RequestConsumeItem",
 }
 
--- Dump one hook parameter: RemoteUnrealParam needs :get(); show type and best-effort value.
+-- Dump one hook parameter: RemoteUnrealParam needs :get(); show type and best-effort
+-- value. Every sub-step gets its own pcall so one bad accessor can't hide the rest,
+-- and failures carry the actual error text for diagnosis.
 local function describeParam(i, p)
-    local ok, desc = pcall(function()
-        local v = p
-        if type(p) == "userdata" and p.get then v = p:get() end
-        local t = type(v)
-        if t == "userdata" then
-            if v.ToString then return string.format("#%d userdata %s", i, v:ToString()) end
-            if v.GetFullName then return string.format("#%d object %s", i, v:GetFullName()) end
-            return string.format("#%d userdata (no ToString)", i)
-        end
+    local v = p
+    local okGet, got = pcall(function() return p:get() end)
+    if okGet then v = got end
+    local t = type(v)
+    if t ~= "userdata" then
         return string.format("#%d %s %s", i, t, tostring(v))
-    end)
-    return ok and desc or string.format("#%d <describe failed>", i)
+    end
+    local okName, name = pcall(function() return v:GetFullName() end)
+    if okName then
+        -- UObject: also try a few likely item-id fields
+        local extra = ""
+        local okId, id = pcall(function() return v.ID:ToString() end)
+        if okId then extra = " ID=" .. tostring(id) end
+        return string.format("#%d object %s%s", i, name, extra)
+    end
+    local okStr, s = pcall(function() return v:ToString() end)
+    if okStr then return string.format("#%d userdata %s", i, tostring(s)) end
+    return string.format("#%d userdata (GetFullName: %s)", i, tostring(name))
 end
 
 local registered = 0

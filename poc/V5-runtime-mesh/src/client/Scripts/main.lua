@@ -72,6 +72,20 @@ local function spawnCube()
         comp:K2_SetRelativeLocation({X=250.0 + spawnCount * 50.0, Y=0.0, Z=0.0}, false, {}, false)
     end)
 
+    -- An empty {} transform in AddComponentByClass may zero-initialize the
+    -- relative scale, which makes the mesh invisible. Force sane values.
+    stage("STAGE6 force scale/visibility", function()
+        comp:SetWorldScale3D({X=1.0, Y=1.0, Z=1.0})
+        comp:SetHiddenInGame(false, false)
+        comp:SetVisibility(true, true)
+    end)
+
+    stage("STAGE7 diagnostics", function()
+        local s = comp.RelativeScale3D
+        log(string.format("  comp=%s scale=(%.2f,%.2f,%.2f) visible=%s",
+            comp:GetFullName(), s.X, s.Y, s.Z, tostring(comp.bVisible)))
+    end)
+
     log("=== done (check world around the player) ===")
 end
 
