@@ -21,7 +21,7 @@ actions/events, and the content-pack ecosystem** on top.
 | C1 Add items (recipes + tech tree) | ✅ verified in-game |
 | C2 Add resources (PNG icons, no pak) | ✅ verified in-game |
 | C3 Place objects in the world (build menu) | ✅ verified in-game |
-| C4 Custom behaviors (onUse hook with item ID) | ✅ verified in-game |
+| C4 Custom behaviors (onUse / onPlace / onInteract hooks with IDs) | ✅ verified in-game |
 | C5 Custom UI (cooked UMG + Lua data-driving) | 🔜 in progress |
 | Bonus: runtime 3D meshes (no pak, ABI-independent) | ✅ verified in-game |
 

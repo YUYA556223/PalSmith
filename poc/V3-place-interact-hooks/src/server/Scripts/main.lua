@@ -28,8 +28,8 @@ local HOOKS = {
             local p = { ... }
             local model = p[1]
             local id = "<n/a>"
-            pcall(function() id = model:get().MapObjectId:ToString() end)
-            log("FIRED OnCompleteBuild_ServerInternal model=" .. objName(model) .. " MapObjectId=" .. tostring(id))
+            pcall(function() id = model:get().BuildObjectId:ToString() end)
+            log("FIRED OnCompleteBuild_ServerInternal model=" .. objName(model) .. " BuildObjectId=" .. tostring(id))
         end,
     },
     {
