@@ -1,4 +1,4 @@
-# PalSmith PMK setup helper
+﻿# PalSmith PMK setup helper
 # ============================
 # Automates everything license-safe in poc/V4-ui/README.md Part A:
 #   [auto]   Visual Studio 2022 Community (+C++ workload, MSVC v14.38), .NET 6,
