@@ -35,10 +35,11 @@ is the core of the framework.
 ## Repository layout
 
 ```
-docs/plan.md   - design document (layers, cross-cutting infra, verification matrix)
-poc/           - concept-proof probes and test packs (see each README)
-src/           - PalSmith runtime (starts after the verification phase)
-tools/         - setup automation (e.g. setup-pmk.ps1 for the UE5 modkit)
+docs/plan.md       - design document (layers, cross-cutting infra, verification matrix)
+docs/pmk-setup.md  - dev environment setup guide (UE5 modkit, English)
+poc/               - concept-proof probes and test packs (see each README)
+src/               - PalSmith runtime (starts after the verification phase)
+tools/             - setup automation (setup-pmk.ps1)
 ```
 
 ## Dependency stack
