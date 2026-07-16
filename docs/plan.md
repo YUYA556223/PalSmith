@@ -5,7 +5,10 @@
 
 - 名称: **PalSmith**(2026-07-16 決定。仮称PalForgeは既存のブリーディング計算ツール
   [palbreedingcalc.com](https://palbreedingcalc.com/) と衝突するため回避。PalWorksもAnimation Frameworkが存在)
-- ステータス: **設計+前提検証フェーズ**(2026-07-16 調査・設計、PoC雛形作成済み)
+- ステータス: **v0.1ランタイム実装済み**(2026-07-17)。C1〜C4+⑦は実機実証済み、C5(UI)はUE5環境構築待ち
+  - ランタイム: `src/PalSmith/`(UE4SS Luaモッド: ID解決/レジストリ/イベント/アクション/ランタイムメッシュ)
+  - サンプル兼テンプレ: `packs/ExamplePack/`、スキーマ: `schemas/`、ドキュメントサイト: `site/`(GitHub Pages, EN/JA)
+  - PoC群は `deprecated/poc/` へ移動(検証記録として保存)
 
 ## 0. 設計原則: 「面白いModが作れる」こと
 
