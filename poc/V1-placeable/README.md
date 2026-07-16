@@ -12,13 +12,12 @@ pak不要で「見た目と物理は既存流用の新建物」になるはず**
 
 ## 手順
 
-1. FModelでPalworldの `Pal.pak` を開き、既存建物のBPクラスパスを1つ特定する
-   - 例: 作業台系 `DT_BuildObjectDataTable` の既存行(`WorkBench` 等)の
-     `BlueprintClassSoft` / `BlueprintClassName` の値をそのまま書き写すのが確実
-   - CXXHeaderDump(zDev UE4SS)でも可
-2. `SmithV1Pack/buildings/smith_test_bench.jsonc` のTODOを埋める
-3. PoC-Aと同様にサーバー+クライアントへ配置して起動
-4. 確認: 建築ホイールに出るか → 設置できるか → 設置物が機能するか(作業台なら既存レシピが出るか)
+1. ~~BPクラスパスの特定~~ → **済(2026-07-16)**: 同梱の`src/client`プローブ(F10)で実機から取得。
+   建築物のパス規則: `/Game/Pal/Blueprint/MapObject/BuildObject/BP_BuildObject_<名前>.BP_BuildObject_<名前>_C`
+2. ~~`smith_test_bench.jsonc` のTODOを埋める~~ → 済(WorkBench流用)
+3. `SmithV1Pack/` をPalSchemaのmodsフォルダへ配置して起動
+4. 確認: テクノロジーLv2「スミスの試験台」解放 → 建築ホイール(Bメニュー)に出るか →
+   設置できるか → 設置物が機能するか(作業台流用なので既存レシピが出るはず)
 
 ## 判定
 

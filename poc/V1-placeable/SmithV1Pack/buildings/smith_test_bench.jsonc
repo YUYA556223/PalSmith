@@ -1,15 +1,13 @@
 // PalSmith V1: 既存BP流用の新規配置物。
 // 形式の出典: PalSchema website/docs/guides/buildings/craftingstation.md
-// ★TODO★ BlueprintClassSoft / BlueprintClassName / IconTexture を
-//          FModelで確認した既存建物(WorkBench等)の実パスに置き換えること。
+// BPパスは V1プローブ(F10)で実機から取得した実パス(2026-07-16):
+//   /Game/Pal/Blueprint/MapObject/BuildObject/BP_BuildObject_WorkBench.BP_BuildObject_WorkBench_C
 {
     "PalSmith_TestBench": {
         "Name": "スミスの試験台",
         "Description": "PalSmith V1: 既存Blueprint流用で追加された配置物。",
-        // TODO: 既存建物のBPクラス名(例はガイドの形式。実値をFModelで確認)
-        "BlueprintClassName": "BP_WorkBench",
-        // TODO: 既存建物のBPクラスパス(.../BP_XXX.BP_XXX_C 形式)
-        "BlueprintClassSoft": "/Game/Pal/Blueprint/MapObject/Building/TODO/BP_WorkBench.BP_WorkBench_C",
+        "BlueprintClassName": "BP_BuildObject_WorkBench",
+        "BlueprintClassSoft": "/Game/Pal/Blueprint/MapObject/BuildObject/BP_BuildObject_WorkBench.BP_BuildObject_WorkBench_C",
         "IconTexture": "/Game/Pal/Texture/BuildObject/PNG/T_icon_buildObject_WorkBench.T_icon_buildObject_WorkBench",
         "Hp": 1000,
         "Defense": 2,
