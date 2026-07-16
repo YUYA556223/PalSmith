@@ -1,0 +1,8 @@
+{
+    "DT_TechnologyNameText": {
+        "NAME_RECIPE_PalSmith_TestPotion": "Prototype Potion"
+    },
+    "DT_TechnologyDescText": {
+        "DESC_RECIPE_PalSmith_TestPotion": "PalSmith PoC-A: a technology added purely via JSON. Unlocks at level 2 for 1 point."
+    }
+}

@@ -1,0 +1,8 @@
+{
+    "name": "SmithV1Pack",
+    "authors": [
+        "ysato"
+    ],
+    "description": "PalSmith V1: placeable object via existing blueprint reuse, JSON only",
+    "version": "0.1.0"
+}

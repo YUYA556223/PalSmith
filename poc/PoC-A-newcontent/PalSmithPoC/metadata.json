@@ -1,0 +1,8 @@
+{
+    "name": "PalSmithPoC",
+    "authors": [
+        "ysato"
+    ],
+    "description": "PalSmith PoC-A: new item + recipe + PNG icon + technology tree unlock, PalSchema only",
+    "version": "0.1.0"
+}

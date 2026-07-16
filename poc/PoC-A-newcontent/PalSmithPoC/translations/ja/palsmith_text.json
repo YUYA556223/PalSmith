@@ -1,0 +1,8 @@
+{
+    "DT_TechnologyNameText": {
+        "NAME_RECIPE_PalSmith_TestPotion": "試作ポーション"
+    },
+    "DT_TechnologyDescText": {
+        "DESC_RECIPE_PalSmith_TestPotion": "PalSmith PoC-A: JSONだけで追加されたテクノロジー。レベル2・ポイント1で解放。"
+    }
+}

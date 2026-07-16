@@ -1,0 +1,25 @@
+// PalSmith PoC-A: テクノロジーツリーに新ノードを追加してレシピを解放する。
+// テーブル名の出典: PalSchema v0.6.0 ソース PalBuildingModLoader.cpp:62-64
+//   DT_TechnologyRecipeUnlock / DT_TechnologyNameText / DT_TechnologyDescText
+//
+// ★最重要検証ポイント★
+// 建物では "UnlockBuildObjects" 列でビルドオブジェクトを解放する。
+// アイテムレシピ解放用の列名は未確定。候補: "UnlockItemRecipes" / "UnlockRecipes"。
+// PalSchemaは不正な列名を「Property 'X' not found」と警告するので、
+// サーバー/クライアントのUE4SSログを見て正しい列名に直すこと。
+// (確実な特定はFModelかCXXHeaderDumpで FTechnologyRecipeUnlock 行構造体を見る)
+{
+    "DT_TechnologyRecipeUnlock": {
+        "PalSmith_TestPotion": {
+            "UnlockItemRecipes": [ "PalSmith_TestPotion" ],
+            "IconName": "WorkBench",
+            "IsBossTechnology": false,
+            "LevelCap": 2,
+            "Cost": 1,
+            // Name/Description はテキストテーブル行への FName 参照
+            // (実テキストは translations/ 側で追加)
+            "Name": "NAME_RECIPE_PalSmith_TestPotion",
+            "Description": "DESC_RECIPE_PalSmith_TestPotion"
+        }
+    }
+}

@@ -1,0 +1,32 @@
+// PalSmith PoC-A: 新アイテム(回復ポーション)。
+// 形式の出典: PalSchema同梱 ExampleMod/items/example_items.json (Raspberry2) +
+//             craftingstationガイドの Tutorial_Sword_5 (Name/Descriptionインライン可)
+{
+    "PalSmith_TestPotion": {
+        "Name": "スミスの試作ポーション",
+        "Description": "PalSmith PoC-A の検証アイテム。\r\nJSONとPNGだけで追加されている。",
+        "Type": "Consumable",
+        // ← 検証ポイント: PalSchema 0.5.0+ の $resource 参照でPNG直読み(pak不要)
+        "IconTexture": "$resource/PalSmithPoC/smith_potion",
+        "TypeA": "Food",
+        "TypeB": "FoodDishVegetable",
+        "Rank": 1,
+        "Rarity": 2,
+        "Price": 100,
+        "MaxStackCount": 99,
+        "SortID": 999000,
+        "Weight": 0.5,
+        // 見た目は既存アセット流用(赤ベリーのモデル)
+        "VisualBlueprintClassSoft": "/Game/Pal/Blueprint/Item/VisualModel/BP_Item_BerryRed.BP_Item_BerryRed_C",
+        "RestoreSatiety": 30,
+        "RestoreHP": 200,
+        "CorruptionFactor": 0.0,
+        // インラインレシピ: 木材3 → ポーション1 (素材IDは検証済みの "Wood" を使用)
+        "Recipe": {
+            "Product_Count": 1,
+            "WorkAmount": 10.0,
+            "Material1_Count": 3,
+            "Material1_Id": "Wood"
+        }
+    }
+}

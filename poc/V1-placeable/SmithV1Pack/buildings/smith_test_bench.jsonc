@@ -1,0 +1,51 @@
+// PalSmith V1: 既存BP流用の新規配置物。
+// 形式の出典: PalSchema website/docs/guides/buildings/craftingstation.md
+// ★TODO★ BlueprintClassSoft / BlueprintClassName / IconTexture を
+//          FModelで確認した既存建物(WorkBench等)の実パスに置き換えること。
+{
+    "PalSmith_TestBench": {
+        "Name": "スミスの試験台",
+        "Description": "PalSmith V1: 既存Blueprint流用で追加された配置物。",
+        // TODO: 既存建物のBPクラス名(例はガイドの形式。実値をFModelで確認)
+        "BlueprintClassName": "BP_WorkBench",
+        // TODO: 既存建物のBPクラスパス(.../BP_XXX.BP_XXX_C 形式)
+        "BlueprintClassSoft": "/Game/Pal/Blueprint/MapObject/Building/TODO/BP_WorkBench.BP_WorkBench_C",
+        "IconTexture": "/Game/Pal/Texture/BuildObject/PNG/T_icon_buildObject_WorkBench.T_icon_buildObject_WorkBench",
+        "Hp": 1000,
+        "Defense": 2,
+        "MaterialType": "Wood",
+        "MaterialSubType": "Wood",
+        "bBelongToBaseCamp": true,
+        "DeteriorationDamage": 0.2,
+        "BuildingData": {
+            "TypeA": "Product",
+            "TypeB": "Prod_Craft",
+            "Rank": 1,
+            "RequiredBuildWorkAmount": 1.0,
+            "Material1_Id": "Wood",
+            "Material1_Count": 5
+        },
+        "Assignments": [
+            {
+                "WorkSuitability": "Handcraft",
+                "WorkSuitabilityRank": 1,
+                "bPlayerWorkable": true,
+                "bBaseCampWorkerWorkable": true,
+                "WorkType": "CommonTemp",
+                "WorkActionType": "CommonWork",
+                "WorkerMaxNum": 0,
+                "AffectSanityValue": -0.15,
+                "AffectFullStomachValue": 1.0
+            }
+        ],
+        "Technology": {
+            "UnlockBuildObjects": [ "PalSmith_TestBench" ],
+            "IconName": "WorkBench",
+            "IsBossTechnology": false,
+            "Name": "スミスの試験台",
+            "Description": "PalSmith V1の検証用テクノロジー。",
+            "LevelCap": 2,
+            "Cost": 1
+        }
+    }
+}
