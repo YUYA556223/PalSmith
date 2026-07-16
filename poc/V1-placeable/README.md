@@ -28,4 +28,21 @@ pak不要で「見た目と物理は既存流用の新建物」になるはず**
 
 ## 結果記録
 
-(実施後にここへ)
+### 2026-07-16 シングルプレイで検証成功 ✅ — C3(ワールド配置)成立
+
+`BP_BuildObject_WorkBench` 流用の `PalSmith_TestBench` が:
+
+- テクノロジーLv2に自作ノードとして出現 → 解放OK
+- **Bメニュー(建築ホイール)に出現** → 木材5で設置OK
+- 設置物は作業台として機能(既存レシピ一覧が表示)
+
+**結論**: `buildings` + 既存BPの `BlueprintClassSoft` 参照で、**UE5もpakも不要**の
+新規配置物がJSONだけで成立する。建築システムに乗るため配置・セーブ・レプリケーションは
+Palworld本体が処理してくれる。
+
+**確定した仕様**:
+- 建築物BPのパス規則: `/Game/Pal/Blueprint/MapObject/BuildObject/BP_BuildObject_<名前>.BP_BuildObject_<名前>_C`
+  (実機のF10プローブ=`FindAllOf("PalBuildObject")`で収集可能)
+
+**次**: V5(ProceduralMesh)との統合 — onPlaceフックで元メッシュを隠し独自メッシュを被せる
+「Bメニューから置ける自作3Dオブジェクト」。+ 専用サーバー構成での検証
