@@ -1,0 +1,8 @@
+{
+    "DT_TechnologyNameText": {
+        "NAME_RECIPE_example_Potion": "Apprentice Potion"
+    },
+    "DT_TechnologyDescText": {
+        "DESC_RECIPE_example_Potion": "PalSmith example: unlocks the Apprentice Potion recipe."
+    }
+}

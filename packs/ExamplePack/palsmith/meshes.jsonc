@@ -1,0 +1,11 @@
+// Runtime meshes: OBJ models attached to placed buildings (no Unreal Engine,
+// no pak). The mesh is applied on world load / first interact.
+{
+    "$schema": "https://raw.githubusercontent.com/YUYA556223/PalSmith/main/schemas/meshes.schema.json",
+
+    "example:Bench": {
+        "model": "models/crystal.obj",
+        "scale": 1.0,
+        "offset": { "x": 0, "y": 0, "z": 180 }
+    }
+}

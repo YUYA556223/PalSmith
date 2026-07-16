@@ -1,0 +1,8 @@
+{
+    "name": "ExamplePack",
+    "authors": [
+        "PalSmith"
+    ],
+    "description": "PalSmith example pack: item + placeable + behaviors + runtime mesh",
+    "version": "0.1.0"
+}

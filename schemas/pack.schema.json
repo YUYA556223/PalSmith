@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://raw.githubusercontent.com/YUYA556223/PalSmith/main/schemas/pack.schema.json",
+    "title": "PalSmith pack manifest (palsmith/pack.jsonc)",
+    "type": "object",
+    "required": ["id"],
+    "properties": {
+        "$schema": { "type": "string" },
+        "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_]+$",
+            "description": "Pack namespace. All your ids become '<id>:<Name>' and resolve to the game row '<id>_<Name>'."
+        },
+        "name": { "type": "string", "description": "Human-readable pack name." },
+        "version": { "type": "string", "description": "Semver of this pack." },
+        "requiresSmith": { "type": "string", "description": "Minimum PalSmith version, e.g. \"0.1\"." },
+        "authors": { "type": "array", "items": { "type": "string" } },
+        "homepage": { "type": "string", "description": "URL of the pack's repository or mod page." },
+        "dependencies": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Ids of other PalSmith packs this pack requires."
+        }
+    },
+    "additionalProperties": false
+}

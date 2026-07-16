@@ -1,0 +1,28 @@
+// PalSchema item definitions (handled by PalSchema, not PalSmith).
+// Row key must match the resolved PalSmith id: "example:Potion" -> "example_Potion".
+{
+    "example_Potion": {
+        "Name": "Apprentice Potion",
+        "Description": "A fizzy training potion made by the PalSmith example pack.\r\nRestores some HP and leaves a bit of wood behind.",
+        "Type": "Consumable",
+        "IconTexture": "$resource/ExamplePack/example_potion",
+        "TypeA": "Food",
+        "TypeB": "FoodDishVegetable",
+        "Rank": 1,
+        "Rarity": 2,
+        "Price": 100,
+        "MaxStackCount": 99,
+        "SortID": 999010,
+        "Weight": 0.5,
+        "VisualBlueprintClassSoft": "/Game/Pal/Blueprint/Item/VisualModel/BP_Item_BerryRed.BP_Item_BerryRed_C",
+        "RestoreSatiety": 20,
+        "RestoreHP": 150,
+        "CorruptionFactor": 0.0,
+        "Recipe": {
+            "Product_Count": 1,
+            "WorkAmount": 10.0,
+            "Material1_Count": 3,
+            "Material1_Id": "Wood"
+        }
+    }
+}

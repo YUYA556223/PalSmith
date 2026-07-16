@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://raw.githubusercontent.com/YUYA556223/PalSmith/main/schemas/meshes.schema.json",
+    "title": "PalSmith runtime meshes (palsmith/meshes.jsonc)",
+    "type": "object",
+    "properties": {
+        "$schema": { "type": "string" }
+    },
+    "additionalProperties": {
+        "type": "object",
+        "required": ["model"],
+        "properties": {
+            "model": { "type": "string", "description": "OBJ file path relative to the palsmith/ folder." },
+            "scale": { "type": "number", "default": 1.0 },
+            "offset": {
+                "type": "object",
+                "properties": {
+                    "x": { "type": "number" },
+                    "y": { "type": "number" },
+                    "z": { "type": "number" }
+                },
+                "additionalProperties": false
+            }
+        },
+        "additionalProperties": false
+    }
+}

@@ -1,0 +1,16 @@
+// Tech-tree node unlocking the potion recipe (verified pattern, PoC-A).
+// Table resolves to DT_TechnologyRecipeUnlock_Common; UnlockItemRecipes is the
+// item-recipe column (confirmed via FPalTechnologyRecipeUnlockDataTableRow).
+{
+    "DT_TechnologyRecipeUnlock": {
+        "example_Potion": {
+            "UnlockItemRecipes": [ "example_Potion" ],
+            "IconName": "WorkBench",
+            "IsBossTechnology": false,
+            "LevelCap": 2,
+            "Cost": 1,
+            "Name": "NAME_RECIPE_example_Potion",
+            "Description": "DESC_RECIPE_example_Potion"
+        }
+    }
+}

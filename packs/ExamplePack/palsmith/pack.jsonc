@@ -1,0 +1,11 @@
+// PalSmith pack manifest.
+// $schema gives editors autocompletion + validation.
+{
+    "$schema": "https://raw.githubusercontent.com/YUYA556223/PalSmith/main/schemas/pack.schema.json",
+    "id": "example",
+    "name": "PalSmith Example Pack",
+    "version": "0.1.0",
+    "requiresSmith": "0.1",
+    "authors": ["PalSmith"],
+    "homepage": "https://github.com/YUYA556223/PalSmith"
+}
