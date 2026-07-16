@@ -5,7 +5,9 @@
 
 - 名称: **PalSmith**(2026-07-16 決定。仮称PalForgeは既存のブリーディング計算ツール
   [palbreedingcalc.com](https://palbreedingcalc.com/) と衝突するため回避。PalWorksもAnimation Frameworkが存在)
-- ステータス: **v0.1ランタイム実装済み**(2026-07-17)。C1〜C4+⑦は実機実証済み、C5(UI)はUE5環境構築待ち
+- ステータス: **v0.1.0 クライアント実機検証済み**(2026-07-17)。ExamplePackでE2E動作確認:
+  World-Readyゲート→`onPlace -> example_Bench`ログ+ポーションonUse/ベンチonInteract/クリスタル(ランタイムメッシュ)をユーザー確認。
+  C5(UI)はUE5環境構築待ち、専用サーバー展開は未実施
   - ランタイム: `src/PalSmith/`(UE4SS Luaモッド: ID解決/レジストリ/イベント/アクション/ランタイムメッシュ)
   - サンプル兼テンプレ: `packs/ExamplePack/`、スキーマ: `schemas/`、ドキュメントサイト: `site/`(GitHub Pages, EN/JA)
   - PoC群は `deprecated/poc/` へ移動(検証記録として保存)
