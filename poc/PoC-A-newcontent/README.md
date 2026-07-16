@@ -39,4 +39,33 @@
 
 ## 結果記録
 
-(実施後にここへ: 日付 / PalSchemaバージョン / 成功・失敗 / 特定した列名 / ログ抜粋)
+### 2026-07-16 クライアント(シングル新規ワールド)で検証成功 ✅
+
+環境: クライアント UE4SS 7月版(v3.0.1-1012系) + PalSchema **0.6.0** / 他Modなしのクリーン構成
+
+| 項目 | 結果 |
+|---|---|
+| アイテム追加 | ✅ ログ `Added Item 'PalSmith_TestPotion'` |
+| レシピ追加 | ✅ ログ `Added new Recipe for Item 'PalSmith_TestPotion'` |
+| PNGアイコン($resource) | ✅ `Registered Image Resource` → ゲーム内でフラスコ画像表示 |
+| ツリーノード出現(Lv2) | ✅ 日本語名「試作ポーション」で表示・解放OK |
+| raw行追加 | ✅ `DT_TechnologyRecipeUnlock_Common: 1 rows added, 0 errors` |
+| クラフト | ✅ **ただし作業台ではなく調理設備(キャンプファイア)に並ぶ**(下記) |
+| 使用 | ✅ |
+
+**特定した仕様**:
+
+- 実テーブル名は `DT_TechnologyRecipeUnlock_Common`(JSONには `DT_TechnologyRecipeUnlock` と
+  書いてもPalSchemaが名前解決した)
+- `UnlockItemRecipes` 列名は**正解**(CXXHeaderDump `FPalTechnologyRecipeUnlockDataTableRow` で確認:
+  `UnlockBuildObjects` / `UnlockItemRecipes` + 基底に Name/Description/IconName/
+  RequireDefeatTowerBoss/RequireTechnology/RequireResearchId/IsBossTechnology/LevelCap/**Tier**/Cost)
+- **レシピが並ぶ設備はアイテムの `TypeA`/`TypeB` で決まる**: `Food` → 調理設備。
+  作業台に出したければ工作系Typeにする
+- **UE4SSとPalSchemaのバージョンペアが重要**: 7月版UE4SS + PalSchema 0.5.2 は
+  `0x7f (procedure not found)` でロード失敗 → 0.6.0が必要。1月版UE4SSには0.5.2
+- PalSchema 0.6.0は本ゲームビルドとシグネチャ1件不一致
+  (`UPalItemSlot::UpdateItem_ServerInternal`)→ 不正アイテムがセーブに入るとワールドが
+  ロード不能になり得る警告。**検証は使い捨てワールドで行うこと**
+
+**残タスク**: セーブ→再ロードの健全性確認 / 専用サーバー+クライアント(マルチ)構成での同検証
