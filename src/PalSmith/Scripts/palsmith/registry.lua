@@ -57,6 +57,10 @@ local function loadPack(dir, folderName)
     if berr then return nil, "behaviors.jsonc: " .. berr end
     local count = 0
     for id, events in pairs(behaviors or {}) do
+        if id:sub(1, 1) == "$" then goto continue_behaviors end -- editor keys like $schema
+        if type(events) ~= "table" then
+            return nil, string.format("behaviors.jsonc: '%s' must map to an object of events", id)
+        end
         local ok, oerr = ids.checkOwnership(id, packId)
         if not ok then return nil, "behaviors.jsonc: " .. oerr end
         local resolved, rerr = ids.resolve(id)
@@ -73,6 +77,7 @@ local function loadPack(dir, folderName)
         end
         M.behaviors[resolved] = entry
         count = count + 1
+        ::continue_behaviors::
     end
 
     -- meshes.jsonc
@@ -80,6 +85,10 @@ local function loadPack(dir, folderName)
     if merr then return nil, "meshes.jsonc: " .. merr end
     local meshCount = 0
     for id, def in pairs(meshes or {}) do
+        if id:sub(1, 1) == "$" then goto continue_meshes end -- editor keys like $schema
+        if type(def) ~= "table" then
+            return nil, string.format("meshes.jsonc: '%s' must map to an object", id)
+        end
         local ok, oerr = ids.checkOwnership(id, packId)
         if not ok then return nil, "meshes.jsonc: " .. oerr end
         local resolved, rerr = ids.resolve(id)
@@ -98,6 +107,7 @@ local function loadPack(dir, folderName)
             offset = def.offset or { x = 0, y = 0, z = 0 },
         }
         meshCount = meshCount + 1
+        ::continue_meshes::
     end
 
     M.packs[packId] = pack
