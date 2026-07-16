@@ -12,7 +12,45 @@ local registry = require("palsmith.registry")
 local actions  = require("palsmith.actions")
 local mesh     = require("palsmith.mesh")
 
-local M = { hooksRegistered = 0, hooksTotal = 0 }
+local M = { hooksRegistered = 0, hooksTotal = 0, worldReady = false }
+
+-- Crash resilience: hooks fire during the world-load storm on half-initialized
+-- objects, and touching them causes native access violations that pcall cannot
+-- catch (observed 2026-07-17). Every handler returns immediately - before
+-- reading ANY parameter - until the world has been stably loaded for a few
+-- seconds (player pawn continuously valid). The poll runs on the game thread.
+local READY_POLLS = 5 -- consecutive ~1s polls with a valid player pawn
+local readyCount = 0
+
+local function startReadyWatch()
+    local ok, err = pcall(function()
+        LoopAsync(1000, function()
+            ExecuteInGameThread(function()
+                local okFind, pawn = pcall(FindFirstOf, "PalPlayerCharacter")
+                local valid = okFind and pawn and pawn:IsValid()
+                if valid then
+                    readyCount = readyCount + 1
+                    if readyCount == READY_POLLS then
+                        M.worldReady = true
+                        core.log("world ready - behavior dispatch enabled")
+                    end
+                else
+                    if M.worldReady then core.log("world left - behavior dispatch paused") end
+                    M.worldReady = false
+                    readyCount = 0
+                end
+            end)
+            return false -- keep polling
+        end)
+    end)
+    if not ok then
+        -- If LoopAsync is unavailable we fail OPEN but log loudly: behaviors
+        -- work, at the cost of the load-storm guard.
+        M.worldReady = true
+        core.warn("ready-watch unavailable (" .. tostring(err) .. ") - dispatch always on")
+    end
+end
+M.startReadyWatch = startReadyWatch
 
 local INTERACT_DEBOUNCE_SEC = 1.0
 local lastInteract = {} -- "<actorName>" -> os.clock()
@@ -60,6 +98,7 @@ end
 function M.install()
     -- onUse ------------------------------------------------------------
     tryHook("/Script/Pal.PalItemUseProcessor:UseItemToCharacter_ServerInternal", function(self, itemData, targetId)
+        if not M.worldReady then return end
         local ok, err = pcall(function()
             local id = get(itemData).ID:ToString()
             dispatch("onUse", id, { player = FindFirstOf("PalPlayerCharacter") })
@@ -69,6 +108,7 @@ function M.install()
 
     -- onPlace (build request carries the id) -----------------------------
     tryHook("/Script/Pal.PalNetworkPlayerComponent:RequestBuild_ToServer", function(self, buildObjectId)
+        if not M.worldReady then return end
         local ok, err = pcall(function()
             local id = get(buildObjectId):ToString()
             dispatch("onPlace", id, { player = FindFirstOf("PalPlayerCharacter") })
@@ -78,6 +118,7 @@ function M.install()
 
     -- onInteract (self = building actor) --------------------------------
     tryHook("/Script/Pal.PalBuildObject:OnBeginInteractBuilding", function(self, other)
+        if not M.worldReady then return end
         local ok, err = pcall(function()
             local building = get(self)
             local otherActor = get(other)

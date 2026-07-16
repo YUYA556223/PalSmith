@@ -26,6 +26,7 @@ local packsDir = thisDir .. "..\\..\\PalSchema\\mods\\"
 local ok, err = pcall(function()
     registry.loadAll(packsDir)
     events.install()
+    events.startReadyWatch()
 end)
 if not ok then
     core.err("startup failed: " .. tostring(err))
