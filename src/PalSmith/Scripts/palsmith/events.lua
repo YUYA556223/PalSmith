@@ -3,7 +3,6 @@
 -- Verified hooks (see __knowledges / deprecated/poc V2+V3, 2026-07-16):
 --   onUse      PalItemUseProcessor:UseItemToCharacter_ServerInternal (param1.ID = FName)
 --   onPlace    PalNetworkPlayerComponent:RequestBuild_ToServer (param1 = FName BuildObjectId)
---   onLoad*    PalPlayerRecordData:OnCompleteBuild_ServerInternal (also fires on world load)
 --   onInteract PalBuildObject:OnBeginInteractBuilding (self = building actor)
 --
 -- Design notes baked in from V3: interact fires for building<->building overlaps
@@ -106,32 +105,11 @@ function M.install()
         if not ok then core.err("onInteract handler: " .. tostring(err)) end
     end)
 
-    -- onLoad / build complete: mesh re-apply trigger ----------------------
-    tryHook("/Script/Pal.PalPlayerRecordData:OnCompleteBuild_ServerInternal", function(self, model)
-        local ok, err = pcall(function()
-            local m = get(model)
-            local id = m.BuildObjectId:ToString()
-            local meshDef = registry.meshFor(id)
-            if not meshDef then return end
-            -- try known accessors to reach the spawned actor from the model
-            local actor = nil
-            for _, getterName in ipairs({ "GetMapObject", "GetActor" }) do
-                local okA, a = pcall(function() return m[getterName](m) end)
-                if okA and a and a.IsValid and a:IsValid() then actor = a; break end
-            end
-            if not actor then
-                local okF, f = pcall(function() return m.MapObject end)
-                if okF and f and f.IsValid and f:IsValid() then actor = f end
-            end
-            if actor then
-                mesh.attachOnce(actor, meshDef)
-            else
-                core.warn("mesh: could not resolve actor from MapObjectModel for " .. id ..
-                    " (will attach on first interact instead)")
-            end
-        end)
-        if not ok then core.err("onLoad handler: " .. tostring(err)) end
-    end)
+    -- NOTE: no OnCompleteBuild_ServerInternal hook. It fires for every existing
+    -- building during the world-load storm, and touching half-initialized
+    -- UPalMapObjectModel memory there caused a native EXCEPTION_ACCESS_VIOLATION
+    -- (2026-07-17; pcall cannot catch native faults). Runtime meshes are applied
+    -- lazily on first interact instead - see the onInteract handler above.
 
     core.log(string.format("events installed: %d/%d hooks active", M.hooksRegistered, M.hooksTotal))
 end
