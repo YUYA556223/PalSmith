@@ -1,41 +1,56 @@
 # PalSmith
 
-**「JSON + PNG + 少しのLua」だけで、Palworldに“新しい遊び”を追加できるようにするコンテンツ基盤Mod。**
-A content framework mod for Palworld: add new items, recipes, tech-tree nodes, placeable objects,
-custom behaviors and UI — without touching Unreal Engine.
+**Add new gameplay to Palworld with just JSON + PNG + a little Lua.**
 
-[PalSchema](https://github.com/Okaetsu/PalSchema) のコンパニオンとして動作し、データ定義はPalSchemaに委譲、
-PalSmithは**挙動(Behavior)・UI・アクション/イベント・配布エコシステム**を担当する。
+PalSmith is a content framework mod for Palworld: new items, recipes, technology-tree
+nodes, placeable objects, custom behaviors, runtime 3D objects and UI — all without
+touching Unreal Engine.
 
-- ステータス: **設計+前提検証フェーズ**(2026-07 開始)
-- 設計書: [docs/plan.md](docs/plan.md)
-- 配布予定: Nexus Mods (Vortex対応) / 手動インストール
+It runs as a companion to [PalSchema](https://github.com/Okaetsu/PalSchema): data
+definitions are delegated to PalSchema, while PalSmith provides **behaviors, UI,
+actions/events, and the content-pack ecosystem** on top.
 
-## 設計原則
+- Status: **design + concept-proof phase** (started 2026-07)
+- Design doc: [docs/plan.md](docs/plan.md) (Japanese — working document)
+- Planned distribution: Nexus Mods (Vortex support) / manual install
 
-**数値調整Modではなく、「できること」を拡張するModを作れる基盤にする。**
-アイテムは「持てる」だけでなく「使える・配置できる・動く」ところまでが目標。
-そのために、追加したゲームオブジェクトに独自の挙動(使用時・配置時・インタラクト時・定期処理)を
-紐付けられる Behavior レイヤーを中核に据える。
+## Concept-proof scoreboard
 
-## リポジトリ構成
+| Concept | Status |
+|---|---|
+| C1 Add items (recipes + tech tree) | ✅ verified in-game |
+| C2 Add resources (PNG icons, no pak) | ✅ verified in-game |
+| C3 Place objects in the world (build menu) | ✅ verified in-game |
+| C4 Custom behaviors (onUse hook with item ID) | ✅ verified in-game |
+| C5 Custom UI (cooked UMG + Lua data-driving) | 🔜 in progress |
+| Bonus: runtime 3D meshes (no pak, ABI-independent) | ✅ verified in-game |
+
+## Design principle
+
+**Extend what mods *can do*, not just tweak numbers.** Items should be usable,
+placeable, and alive — not just holdable. The Behavior layer (declarative
+`onUse` / `onPlace` / `onInteract` / `onTick` handlers, server-authoritative)
+is the core of the framework.
+
+## Repository layout
 
 ```
-docs/plan.md   — 設計書(レイヤー構成・横断基盤・検証マトリクス・ロードマップ)
-poc/           — 前提検証用PoC群(それぞれのREADME参照)
-src/           — PalSmithランタイム本体(検証完了後に着手)
+docs/plan.md   - design document (layers, cross-cutting infra, verification matrix)
+poc/           - concept-proof probes and test packs (see each README)
+src/           - PalSmith runtime (starts after the verification phase)
+tools/         - setup automation (e.g. setup-pmk.ps1 for the UE5 modkit)
 ```
 
-## 依存スタック
+## Dependency stack
 
 ```
 Palworld (UE5)
-└─ UE4SS (Palworld専用fork)
-   └─ PalSchema (v0.5.0+ … $resource画像インポート必須)
-      └─ PalSmith ← このリポジトリ
-         └─ 各コンテンツパック (JSON + PNG)
+└─ UE4SS (Palworld-specific fork)
+   └─ PalSchema (v0.5.0+ ... $resource image import required)
+      └─ PalSmith  <- this repository
+         └─ content packs (JSON + PNG)
 ```
 
 ## License / Credits
 
-TBD。PalSchema (Okaetsu) と UE4SS チームの成果の上に成り立っています。
+TBD. Built on the work of PalSchema (Okaetsu) and the UE4SS team.

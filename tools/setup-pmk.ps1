@@ -1,4 +1,4 @@
-﻿# PalSmith PMK setup helper
+# PalSmith PMK setup helper
 # ============================
 # Automates everything license-safe in poc/V4-ui/README.md Part A:
 #   [auto]   Visual Studio 2022 Community (+C++ workload, MSVC v14.38), .NET 6,
@@ -19,21 +19,21 @@ param(
     [string]$PmkDir = "E:\PalworldModdingKit",
     # Folder that contains the Wwise *offline integration* download (Unreal.5.0.tar.xz).
     [string]$WwiseOfflineDir = "$env:USERPROFILE\Downloads",
-    # Wwise SDK root; auto-detected under Audiokinetic install dir if left empty.
+    # Wwise SDK root; auto-detected under the Audiokinetic install dir if left empty.
     [string]$WwiseSdkDir = ""
 )
 
 $ErrorActionPreference = "Stop"
 function Step($n, $msg) { Write-Host "`n[$n] $msg" -ForegroundColor Cyan }
-function Ok($msg)   { Write-Host "  OK  $msg" -ForegroundColor Green }
+function Ok($msg)   { Write-Host "  OK   $msg" -ForegroundColor Green }
 function Todo($msg) { Write-Host "  TODO $msg" -ForegroundColor Yellow }
 
 function Have($cmd) { return [bool](Get-Command $cmd -ErrorAction SilentlyContinue) }
 
 # ---------------------------------------------------------------- 1. winget
-Step 1 "winget の確認"
+Step 1 "Checking winget"
 if (-not (Have winget)) {
-    throw "winget が見つかりません。Microsoft Store で「アプリ インストーラー」を更新してください。"
+    throw "winget not found. Update 'App Installer' from the Microsoft Store."
 }
 Ok "winget available"
 
@@ -43,12 +43,12 @@ if (Have git) { Ok "git installed" }
 else { winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements; Ok "git installed via winget" }
 
 # ---------------------------------------------------------------- 3. VS2022 + C++
-Step 3 "Visual Studio 2022 Community + C++ワークロード"
+Step 3 "Visual Studio 2022 Community + C++ workload"
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 $vsFound = (Test-Path $vswhere) -and (& $vswhere -products Microsoft.VisualStudio.Product.Community -property installationPath)
 if ($vsFound) {
     Ok "VS2022 Community installed"
-    Todo "未導入なら VS Installer で「C++によるデスクトップ開発」+「MSVC v143 (v14.38-17.8)」を追加してください"
+    Todo "If missing, add via VS Installer: 'Desktop development with C++' + 'MSVC v143 (v14.38-17.8)'"
 } else {
     winget install --id Microsoft.VisualStudio.2022.Community -e --accept-source-agreements --accept-package-agreements `
         --override "--passive --wait --add Microsoft.VisualStudio.Workload.NativeDesktop;includeRecommended --add Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64"
@@ -69,18 +69,18 @@ else { winget install --id EpicGames.EpicGamesLauncher -e --accept-source-agreem
 
 $ue51 = Get-ChildItem "C:\Program Files\Epic Games\UE_5.1*" -ErrorAction SilentlyContinue
 if (-not $ue51) {
-    # UE default install root may be customized; also check E:
+    # UE install root may be customized; also check other drives
     $ue51 = Get-ChildItem "E:\Epic Games\UE_5.1*", "D:\Epic Games\UE_5.1*" -ErrorAction SilentlyContinue
 }
 if ($ue51) { Ok ("UE 5.1 found: " + $ue51[0].FullName) }
 else {
-    Todo "UE 5.1 は手動導入が必要です(EpicアカウントでのEULA同意のため):"
-    Todo "  Epic Games Launcher → Unreal Engine → ライブラリ → [+] → バージョン 5.1.x → インストール"
-    Todo "  ※容量に注意。インストール先はどのドライブでも可"
+    Todo "UE 5.1 must be installed manually (Epic account / EULA consent required):"
+    Todo "  Epic Games Launcher -> Unreal Engine -> Library -> [+] -> version 5.1.x -> Install"
+    Todo "  Any install drive is fine; mind the disk space"
 }
 
 # ---------------------------------------------------------------- 6. PMK clone
-Step 6 "PalworldModdingKit のクローン ($PmkDir)"
+Step 6 "Cloning PalworldModdingKit ($PmkDir)"
 if (Test-Path (Join-Path $PmkDir "Pal.uproject")) { Ok "PMK already cloned" }
 else {
     git clone https://github.com/localcc/PalworldModdingKit.git $PmkDir
@@ -88,13 +88,13 @@ else {
 }
 
 # ---------------------------------------------------------------- 7. BuildConfiguration.xml
-Step 7 "BuildConfiguration.xml (VS2022を明示)"
+Step 7 "BuildConfiguration.xml (force VS2022)"
 $bcDir  = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "Unreal Engine\UnrealBuildTool"
 $bcPath = Join-Path $bcDir "BuildConfiguration.xml"
 if ((Test-Path $bcPath) -and ((Get-Content $bcPath -Raw) -match "VisualStudio2022")) {
     Ok "BuildConfiguration.xml already set for VS2022"
 } elseif (Test-Path $bcPath) {
-    Todo "$bcPath が既に存在します。<Compiler>VisualStudio2022</Compiler> を手で確認してください"
+    Todo "$bcPath already exists. Verify it contains <Compiler>VisualStudio2022</Compiler>"
 } else {
     New-Item -ItemType Directory -Force -Path $bcDir | Out-Null
     @"
@@ -109,7 +109,7 @@ if ((Test-Path $bcPath) -and ((Get-Content $bcPath -Raw) -match "VisualStudio202
 }
 
 # ---------------------------------------------------------------- 8. Wwise SDK detection
-Step 8 "Wwise 2021.1.11 SDK の検出"
+Step 8 "Detecting Wwise 2021.1.11 SDK"
 if (-not $WwiseSdkDir) {
     $ak = Get-ChildItem "${env:ProgramFiles(x86)}\Audiokinetic\Wwise 2021.1*" -ErrorAction SilentlyContinue |
           Sort-Object Name -Descending | Select-Object -First 1
@@ -118,16 +118,16 @@ if (-not $WwiseSdkDir) {
 $wwiseSdkOk = $WwiseSdkDir -and (Test-Path (Join-Path $WwiseSdkDir "include"))
 if ($wwiseSdkOk) { Ok "Wwise SDK: $WwiseSdkDir" }
 else {
-    Todo "Wwise 2021.1.11 は手動導入が必要です(Audiokineticアカウントのため):"
-    Todo "  1. Audiokinetic Launcher をインストール → Wwise 2021.1.11 を選択"
-    Todo "     - SDK(C++) / Microsoft Windows Visual Studio 2022 にチェック"
-    Todo "  2. 同ランチャーの Unreal integration から offline integration files をDL"
-    Todo "     (Unreal.5.0.tar.xz を $WwiseOfflineDir に置く)"
-    Todo "  3. このスクリプトを再実行"
+    Todo "Wwise 2021.1.11 must be installed manually (Audiokinetic account required):"
+    Todo "  1. Install the Audiokinetic Launcher -> select Wwise 2021.1.11"
+    Todo "     - check SDK (C++) / Microsoft Windows Visual Studio 2022"
+    Todo "  2. From the same launcher, download the Unreal *offline integration* files"
+    Todo "     (put Unreal.5.0.tar.xz into $WwiseOfflineDir)"
+    Todo "  3. Re-run this script"
 }
 
 # ---------------------------------------------------------------- 9. Wwise integration into PMK
-Step 9 "Wwise手動統合の自動実行 (PMKのPlugins配下)"
+Step 9 "Wwise integration into PMK (Plugins/)"
 $pluginDir  = Join-Path $PmkDir "Plugins"
 $wwisePlug  = Join-Path $pluginDir "Wwise"
 $uplugin    = Join-Path $wwisePlug "Wwise.uplugin"
@@ -136,7 +136,7 @@ if (Test-Path $uplugin) {
 } else {
     $tarXz = Get-ChildItem $WwiseOfflineDir -Filter "Unreal.5.0.tar.xz" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not ($tarXz -and $wwiseSdkOk)) {
-        Todo "Wwise SDK と Unreal.5.0.tar.xz が揃ってから再実行してください(手順はStep 8参照)"
+        Todo "Re-run once the Wwise SDK and Unreal.5.0.tar.xz are in place (see Step 8)"
     } else {
         Write-Host "  extracting $($tarXz.FullName) ..."
         $tmp = Join-Path $env:TEMP "pmk_wwise_extract"
@@ -144,12 +144,12 @@ if (Test-Path $uplugin) {
         New-Item -ItemType Directory -Force -Path $tmp | Out-Null
         tar -xf $tarXz.FullName -C $tmp
         $srcWwise = Get-ChildItem $tmp -Directory -Filter "Wwise" -Recurse | Select-Object -First 1
-        if (-not $srcWwise) { throw "展開結果に Wwise フォルダが見つかりません" }
+        if (-not $srcWwise) { throw "No 'Wwise' folder found in the extracted archive" }
         New-Item -ItemType Directory -Force -Path $pluginDir | Out-Null
         Copy-Item $srcWwise.FullName $pluginDir -Recurse
         Ok "Wwise folder -> Plugins/"
 
-        # ThirdParty: SDK components + vc170->vc160 duplicates
+        # ThirdParty: SDK components + vc170 -> vc160 duplicates
         $third = Join-Path $wwisePlug "ThirdParty"
         New-Item -ItemType Directory -Force -Path $third | Out-Null
         foreach ($c in @("Win32_vc170", "x64_vc170", "include")) {
@@ -171,11 +171,11 @@ if (Test-Path $uplugin) {
 
 # ---------------------------------------------------------------- done
 Write-Host "`n=============================================" -ForegroundColor Cyan
-Write-Host " セットアップ状況まとめ" -ForegroundColor Cyan
+Write-Host " Setup summary" -ForegroundColor Cyan
 Write-Host "============================================="
-Write-Host " 残っている手動ステップ(あれば上のTODOを参照):"
-Write-Host "  - UE 5.1 (Epic Games Launcher内でインストール)"
+Write-Host " Remaining manual steps (see TODO lines above, if any):"
+Write-Host "  - UE 5.1 (install inside Epic Games Launcher)"
 Write-Host "  - Wwise 2021.1.11 + offline integration files (Audiokinetic Launcher)"
-Write-Host " すべてOKなら: $PmkDir\Pal.uproject をダブルクリックで起動"
-Write-Host " (初回はシェーダーコンパイルで長時間かかります)"
-Write-Host " 次: poc/V4-ui/README.md の Part B (Widget作成) へ"
+Write-Host " When everything is OK: double-click $PmkDir\Pal.uproject"
+Write-Host " (first launch takes a long time compiling shaders)"
+Write-Host " Next: poc/V4-ui/README.md Part B (author the widget)"
