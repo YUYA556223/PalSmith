@@ -3,6 +3,15 @@
 **目的**: 「アイテムを使った」瞬間をLuaでフックし、**どのアイテムか(StaticItemId)を特定できる**ことを
 確認する。これが取れれば `onUse` Behavior が成立し、PalSmithの中核構想が確定する。
 
+## 候補関数(2026-07-16 CXXHeaderDumpから抽出済み)
+
+| 関数 | 所属 | 期待 |
+|---|---|---|
+| `UseItemToCharacter_ServerInternal(UPalStaticItemDataBase*, FPalInstanceID)` | `UPalItemUseProcessor` | ★本命: サーバー権威+アイテムデータが引数に直接入っている |
+| `RequestUseItemToCharacter_ToServer(FPalItemSlotIdAndNum, FPalInstanceID)` | `APalPlayerController` | クライアント→サーバーRPCの入口 |
+| `RequestUseToCharacter(FPalInstanceID, int32)` | `UPalItemSlot` | スロット起点(selfからアイテムID逆引き) |
+| `RequestConsumeItem(FName StaticItemId, int32)` | `APalWeaponBase` | 投擲武器系の消費 |
+
 ## 手順
 
 1. まず候補関数を洗い出す:

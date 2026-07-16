@@ -8,13 +8,15 @@
 
 local function log(msg) print("[SmithV2] " .. tostring(msg) .. "\n") end
 
--- Candidate function paths. The ones below are UNVERIFIED first guesses kept as
--- documentation of naming patterns — replace/extend from the actual header dump.
+-- Candidate function paths, extracted from the client CXXHeaderDump (2026-07-16).
+-- The prime target is UPalItemUseProcessor:UseItemToCharacter_ServerInternal —
+-- server-authoritative AND carries UPalStaticItemDataBase* directly in its params.
 local CANDIDATES = {
-    "/Script/Pal.PalPlayerInventoryData:RequestUseItem",
-    "/Script/Pal.PalPlayerInventoryData:UseItem",
-    "/Script/Pal.PalUtility:UseItem",
-    "/Script/Pal.PalStaticItemDataBase:OnUse",
+    "/Script/Pal.PalItemUseProcessor:UseItemToCharacter_ServerInternal",
+    "/Script/Pal.PalPlayerController:RequestUseItemToCharacter_ToServer",
+    "/Script/Pal.PalPlayerController:RequestUseItemToCharacter",
+    "/Script/Pal.PalItemSlot:RequestUseToCharacter",
+    "/Script/Pal.PalWeaponBase:RequestConsumeItem",
 }
 
 -- Dump one hook parameter: RemoteUnrealParam needs :get(); show type and best-effort value.
