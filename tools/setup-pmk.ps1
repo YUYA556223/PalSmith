@@ -70,7 +70,7 @@ else { winget install --id EpicGames.EpicGamesLauncher -e --accept-source-agreem
 $ue51 = Get-ChildItem "C:\Program Files\Epic Games\UE_5.1*" -ErrorAction SilentlyContinue
 if (-not $ue51) {
     # UE install root may be customized; also check other drives
-    $ue51 = Get-ChildItem "E:\Epic Games\UE_5.1*", "D:\Epic Games\UE_5.1*" -ErrorAction SilentlyContinue
+    $ue51 = Get-ChildItem "E:\Unreal\UE_5.1*", "E:\Epic Games\UE_5.1*", "D:\Epic Games\UE_5.1*" -ErrorAction SilentlyContinue
 }
 if ($ue51) { Ok ("UE 5.1 found: " + $ue51[0].FullName) }
 else {
@@ -111,7 +111,7 @@ if ((Test-Path $bcPath) -and ((Get-Content $bcPath -Raw) -match "VisualStudio202
 # ---------------------------------------------------------------- 8. Wwise SDK detection
 Step 8 "Detecting Wwise 2021.1.11 SDK"
 if (-not $WwiseSdkDir) {
-    $ak = Get-ChildItem "${env:ProgramFiles(x86)}\Audiokinetic\Wwise 2021.1*" -ErrorAction SilentlyContinue |
+    $ak = Get-ChildItem "${env:ProgramFiles(x86)}\Audiokinetic\Wwise 2021.1*", "E:\AudioKinetic\Wwise_2021.1*" -ErrorAction SilentlyContinue |
           Sort-Object Name -Descending | Select-Object -First 1
     if ($ak) { $WwiseSdkDir = Join-Path $ak.FullName "SDK" }
 }
