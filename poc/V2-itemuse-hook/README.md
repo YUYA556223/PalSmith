@@ -33,4 +33,16 @@
 
 ## 結果記録
 
-(実施後にここへ: 発火した関数パス / パラメータ構造 / サーバー・クライアント別の挙動)
+### 2026-07-16 シングルプレイで検証成功 ✅ — onUse Behavior成立確定
+
+自作アイテム(PalSmith_TestPotion)使用で3フックが発火(発火順):
+
+1. `PalItemSlot:RequestUseToCharacter(FPalInstanceID, int32 UseNum)` — self=PalItemSlot
+2. `PalPlayerController:RequestUseItemToCharacter_ToServer(FPalItemSlotIdAndNum, FPalInstanceID)`
+3. **`PalItemUseProcessor:UseItemToCharacter_ServerInternal`** — ★本命。
+   `param#1 = PalStaticConsumeItemData(DA_StaticItemDataAsset内) で ID=PalSmith_TestPotion が直接読めた`
+
+**結論**: `param1:get().ID`(FName)でアイテムIDが取れる → ID→Behaviorのディスパッチが
+そのまま実装可能。処理はサーバー権威側なのでマルチでも安全な見込み。
+
+**残タスク**: 専用サーバー構成で同フックが発火するか(サーバー側にプローブ配置して確認)

@@ -37,4 +37,14 @@ BlueprintCallable(=UE4SS Luaから呼べる見込み、ABI非依存):
 
 ## 結果記録
 
-(実施後にここへ)
+### 2026-07-16 シングルプレイで検証成功 ✅ — ランタイム3Dオブジェクト成立
+
+F9で立方体がワールドに出現(プレイヤーに追従)。全ステージOK:
+`AddComponentByClass` → `CreateMeshSection`(コリジョン付き) → 配置 → 可視。
+
+**ハマりどころ(重要)**: `AddComponentByClass` に空テーブル `{}` をFTransformとして渡すと
+**スケールが(0,0,0)にゼロ初期化されて不可視**になる。`SetWorldScale3D({X=1,Y=1,Z=1})` の
+明示呼び出しで解決。UE4SSのLua→構造体渡し全般で要注意。
+
+**次**: .objパーサ(Lua)→頂点配列化 / テクスチャ(`ImportFileAsTexture2D`)+
+DynamicMaterial適用 / V1(buildings)との統合=「Bメニューから置ける独自メッシュ建築物」
