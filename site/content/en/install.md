@@ -54,3 +54,18 @@ server-authoritatively where the underlying game call is.
 
 > **Test worlds recommended.** PalSchema warns that invalid items inside a save
 > can make a world fail to load. Always try new packs on a throwaway world first.
+
+## Uninstalling packs safely
+
+**Never remove a pack while a world still contains its content.** Items and
+placed objects whose definitions disappear become *invalid* in the save, and
+the world may lag heavily or fail to load (verified the hard way).
+
+Safe removal order:
+
+1. In every world that used the pack: destroy its placed objects, discard its
+   items from all inventories/chests, then save and exit.
+2. Remove the pack folder from `PalSchema/mods/`.
+
+If a world already got into this state, **reinstall the pack** — the world
+loads again, and you can then clean up in the right order.
