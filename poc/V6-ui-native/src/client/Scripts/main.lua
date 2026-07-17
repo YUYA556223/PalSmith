@@ -25,7 +25,7 @@ local function construct(classPath, outer)
 end
 
 local function buildUI()
-    log("=== F7: building Lua-native UMG ===")
+    log("=== building Lua-native UMG ===")
 
     local pc = stage("STAGE1 player controller", function()
         local p = FindFirstOf("PalPlayerController")
@@ -44,23 +44,30 @@ local function buildUI()
     end)
     if not w then return end
 
-    local root = stage("STAGE3 widget tree + root VerticalBox", function()
-        local tree = w.WidgetTree
-        assert(tree and tree:IsValid(), "WidgetTree not accessible")
+    -- A bare UUserWidget has no WidgetTree (normally built from its generated
+    -- class). Construct one and assign it before populating.
+    local tree = stage("STAGE3 construct + assign WidgetTree", function()
+        local t = w.WidgetTree
+        if not (t and t:IsValid()) then
+            t = construct("/Script/UMG.WidgetTree", w)
+            w.WidgetTree = t
+        end
+        assert(t and t:IsValid(), "WidgetTree still invalid after construct")
+        return t
+    end)
+    if not tree then return end
+
+    local root = stage("STAGE4 root VerticalBox + children", function()
         local vbox = construct("/Script/UMG.VerticalBox", tree)
         tree.RootWidget = vbox
+        for _, text in ipairs({ "PalSmith UI test", "Row A", "Row B" }) do
+            local tb = construct("/Script/UMG.TextBlock", tree)
+            tb:SetText(FText(text))
+            vbox:AddChildToVerticalBox(tb)
+        end
         return vbox
     end)
     if not root then return end
-
-    stage("STAGE4 add TextBlock children", function()
-        local tree = w.WidgetTree
-        for i, text in ipairs({ "PalSmith UI test", "Row A", "Row B" }) do
-            local tb = construct("/Script/UMG.TextBlock", tree)
-            tb:SetText(FText(text))
-            root:AddChildToVerticalBox(tb)
-        end
-    end)
 
     stage("STAGE5 AddToViewport", function()
         w:AddToViewport(1000)
@@ -70,7 +77,7 @@ local function buildUI()
     log("=== done (look for text on screen; F7 again to rebuild) ===")
 end
 
-RegisterKeyBind(Key.F7, function()
+local function onKey()
     ExecuteInGameThread(function()
         if widget and widget:IsValid() then
             pcall(function() widget:RemoveFromParent() end)
@@ -81,6 +88,13 @@ RegisterKeyBind(Key.F7, function()
             if not ok then log("buildUI error: " .. tostring(err)) end
         end
     end)
-end)
+end
 
-log("V6 probe ready: press F7 in-world to build a Lua-native UMG panel")
+-- Bind several keys so a media/volume-mapped function key can't hide the probe.
+-- F9 is proven to work (V5). '\' and F6 are extra fallbacks.
+local bound = {}
+for _, k in ipairs({ Key.F9, Key.F6, Key.SEVEN }) do
+    local ok = pcall(RegisterKeyBind, k, onKey)
+    table.insert(bound, ok and "ok" or "fail")
+end
+log("V6 probe ready: press F9 (or F6, or the '7' number key) in-world. binds=" .. table.concat(bound, ","))

@@ -30,4 +30,29 @@
 
 ## 結果記録
 
-(実施後にここへ)
+### 2026-07-17 検証成功 ✅ — Lua-native UI 成立、UE5完全不要
+
+全STAGE通過、画面に "PalSmith UI test / Row A / Row B" 表示:
+
+```
+STAGE1 player controller           OK
+STAGE2 construct UUserWidget       OK
+STAGE3 construct + assign WidgetTree OK
+STAGE4 root VerticalBox + children OK
+STAGE5 AddToViewport               OK
+```
+
+**確定した手順(UE4SS Lua、cook不要)**:
+
+1. `pc = FindFirstOf("PalPlayerController")`
+2. `w = StaticConstructObject(StaticFindObject("/Script/UMG.UserWidget"), pc)` — 素のUserWidget
+3. **`w.WidgetTree` はnull** → `tree = StaticConstructObject(StaticFindObject("/Script/UMG.WidgetTree"), w)`;
+   `w.WidgetTree = tree`(★これが肝。素のUUserWidgetはWidgetTreeを持たない)
+4. `vbox = construct("/Script/UMG.VerticalBox", tree)`; `tree.RootWidget = vbox`
+5. `tb = construct("/Script/UMG.TextBlock", tree)`; `tb:SetText(FText(...))`; `vbox:AddChildToVerticalBox(tb)`
+6. `w:AddToViewport(1000)`
+
+キー: **F7は音量キーと干渉して不発。F9は実績あり**。複数キーをバインドすると安全。
+
+**意義**: PalSmithのUIは永久にUE5/PMK/cook不要。エディタ環境(V4)は不要になった
+(残すが非常用フォールバック)。次はこの手順を `palsmith/ui.lua` に一般化してMod Managerを実装。
