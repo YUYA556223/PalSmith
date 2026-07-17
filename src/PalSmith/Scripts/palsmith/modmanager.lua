@@ -1,32 +1,27 @@
--- PalSmith Mod Manager: list installed mods and toggle them enabled/disabled.
--- Changes apply on the next game start (UE4SS/PalSchema load mods at startup).
+-- PalSmith Mod Manager: two-pane UI built from the game's own widgets.
+--   left  = independently scrollable, clickable mod list (native menu buttons)
+--   right = independently scrollable metadata for the selected mod
+-- Toggling a mod enables/disables it (applies on next game start).
 --
--- Two mod kinds:
---   UE4SS Lua mods   -> <Win64>/ue4ss/Mods/<Name>/ , toggled by enabled.txt
---   PalSchema packs  -> <Win64>/ue4ss/Mods/PalSchema/mods/<Name>/ , toggled by
---                       moving to/from a sibling "mods_disabled" folder
---
--- The UI is number-key driven (1..9 toggle the Nth row) - no clickable buttons,
--- which keeps it fully Lua-constructed (see ui.lua).
-local core = require("palsmith.core")
-local ui   = require("palsmith.ui")
+-- Mod kinds:
+--   lua  -> ue4ss/Mods/<Name>/ , enabled.txt present/absent
+--   pack -> ue4ss/Mods/PalSchema/mods/<Name>/ vs .../mods_disabled/<Name>/
+local core   = require("palsmith.core")
+local json   = require("palsmith.json")
+local nui    = require("palsmith.nativeui")
 
 local M = {}
 
--- Resolve the ue4ss/Mods dir from this script's location:
--- <Mods>/PalSmith/Scripts/palsmith/ -> up 3 -> <Mods>
+-- ---- filesystem ----
 local function modsDir()
     local here = debug.getinfo(1, "S").source:match("@?(.*[\\/])") or ""
     return here .. "..\\..\\..\\"
 end
 
--- Windows helpers via shell (io.popen), pcall-guarded.
 local function sh(cmd)
     local ok, res = pcall(function()
-        local p = io.popen(cmd .. " 2>nul")
-        if not p then return "" end
-        local out = p:read("*a"); p:close()
-        return out or ""
+        local p = io.popen(cmd .. " 2>nul"); if not p then return "" end
+        local out = p:read("*a"); p:close(); return out or ""
     end)
     return ok and res or ""
 end
@@ -40,40 +35,32 @@ local function listDirs(path)
 end
 
 local function fileExists(path)
-    local f = io.open(path, "rb")
-    if f then f:close(); return true end
-    return false
+    local f = io.open(path, "rb"); if f then f:close(); return true end; return false
 end
 
--- Build the mod inventory. Returns an array of { kind, name, enabled, path }.
+local function readJsonc(path)
+    local text = core.readFile(path); if not text then return nil end
+    local v = json.decode(text); return v
+end
+
 function M.scan()
     local base = modsDir()
     local mods = {}
-
-    -- UE4SS Lua mods: any folder with a Scripts/ dir (skip our own framework bits
-    -- and PalSchema itself, which is managed as a dependency, not user content).
-    local skip = { PalSmith = true, PalSchema = true, shared = true, BPModLoaderMod = true,
-                   Keybinds = true }
+    local skip = { PalSmith = true, PalSchema = true, shared = true, BPModLoaderMod = true, Keybinds = true }
     for _, name in ipairs(listDirs(base)) do
         if not skip[name] and fileExists(base .. name .. "\\Scripts\\main.lua") then
-            local enabled = fileExists(base .. name .. "\\enabled.txt")
-            table.insert(mods, { kind = "lua", name = name, enabled = enabled,
-                                 path = base .. name })
+            table.insert(mods, { kind = "lua", name = name,
+                enabled = fileExists(base .. name .. "\\enabled.txt"), path = base .. name })
         end
     end
-
-    -- PalSchema packs
-    local psActive = base .. "PalSchema\\mods\\"
-    local psDisabled = base .. "PalSchema\\mods_disabled\\"
-    for _, name in ipairs(listDirs(psActive)) do
-        table.insert(mods, { kind = "pack", name = name, enabled = true,
-                             path = psActive .. name })
+    local psA = base .. "PalSchema\\mods\\"
+    local psD = base .. "PalSchema\\mods_disabled\\"
+    for _, name in ipairs(listDirs(psA)) do
+        table.insert(mods, { kind = "pack", name = name, enabled = true, path = psA .. name })
     end
-    for _, name in ipairs(listDirs(psDisabled)) do
-        table.insert(mods, { kind = "pack", name = name, enabled = false,
-                             path = psDisabled .. name })
+    for _, name in ipairs(listDirs(psD)) do
+        table.insert(mods, { kind = "pack", name = name, enabled = false, path = psD .. name })
     end
-
     table.sort(mods, function(a, b)
         if a.kind ~= b.kind then return a.kind < b.kind end
         return a.name < b.name
@@ -81,101 +68,184 @@ function M.scan()
     return mods
 end
 
--- Toggle one mod. Returns true, newState or false, error.
+-- Metadata for the detail pane. Packs read palsmith/pack.jsonc + counts.
+local function metaLines(mod)
+    local lines = {}
+    local function add(k, v) if v ~= nil and v ~= "" then table.insert(lines, { k = k, v = tostring(v) }) end end
+    add("Name", mod.name)
+    add("Type", mod.kind == "pack" and "PalSchema content pack" or "UE4SS Lua mod")
+    add("Status", mod.enabled and "Enabled" or "Disabled")
+    if mod.kind == "pack" then
+        local m = readJsonc(mod.path .. "\\palsmith\\pack.jsonc")
+        if m then
+            add("Pack id", m.id)
+            add("Version", m.version)
+            add("Requires PalSmith", m.requiresSmith)
+            if type(m.authors) == "table" then add("Authors", table.concat(m.authors, ", ")) end
+            add("Homepage", m.homepage)
+        else
+            add("PalSmith pack", "no (plain PalSchema data)")
+        end
+        local beh = readJsonc(mod.path .. "\\palsmith\\behaviors.jsonc")
+        if type(beh) == "table" then
+            local n = 0; for k in pairs(beh) do if k:sub(1, 1) ~= "$" then n = n + 1 end end
+            add("Behaviors", n)
+        end
+        local msh = readJsonc(mod.path .. "\\palsmith\\meshes.jsonc")
+        if type(msh) == "table" then
+            local n = 0; for k in pairs(msh) do if k:sub(1, 1) ~= "$" then n = n + 1 end end
+            add("Runtime meshes", n)
+        end
+    end
+    add("Folder", mod.path)
+    return lines
+end
+
 function M.toggle(mod)
     local base = modsDir()
     if mod.kind == "lua" then
         local flag = mod.path .. "\\enabled.txt"
-        if mod.enabled then
-            sh('del /q "' .. flag .. '"')
-            return true, false
-        else
-            sh('type nul > "' .. flag .. '"')
-            return true, true
-        end
+        if mod.enabled then sh('del /q "' .. flag .. '"'); return true, false
+        else sh('type nul > "' .. flag .. '"'); return true, true end
     elseif mod.kind == "pack" then
         local active = base .. "PalSchema\\mods\\" .. mod.name
         local disabled = base .. "PalSchema\\mods_disabled\\" .. mod.name
         sh('if not exist "' .. base .. 'PalSchema\\mods_disabled" mkdir "' .. base .. 'PalSchema\\mods_disabled"')
-        if mod.enabled then
-            sh('move /y "' .. active .. '" "' .. disabled .. '"')
-            return true, false
-        else
-            sh('move /y "' .. disabled .. '" "' .. active .. '"')
-            return true, true
-        end
+        if mod.enabled then sh('move /y "' .. active .. '" "' .. disabled .. '"'); return true, false
+        else sh('move /y "' .. disabled .. '" "' .. active .. '"'); return true, true end
     end
     return false, "unknown kind"
 end
 
--- ---- UI ----
-local panel = nil
-local current = {} -- displayed mods, index-aligned with number keys
-
--- Palworld-ish palette: warm cream text, amber accent, muted browns.
+-- ---- colours ----
 local COL = {
-    accent  = { 0.98, 0.80, 0.38, 1.0 }, -- amber title
-    cream   = { 0.96, 0.93, 0.86, 1.0 }, -- primary text
-    muted   = { 0.72, 0.68, 0.60, 1.0 }, -- secondary
-    on      = { 0.55, 0.85, 0.50, 1.0 }, -- enabled green
-    off     = { 0.70, 0.55, 0.48, 1.0 }, -- disabled clay
-    index   = { 0.85, 0.72, 0.50, 1.0 },
+    accent = { 0.98, 0.80, 0.38, 1 }, cream = { 0.96, 0.93, 0.86, 1 },
+    muted = { 0.72, 0.68, 0.60, 1 }, on = { 0.55, 0.85, 0.50, 1 },
+    off = { 0.80, 0.55, 0.45, 1 }, key = { 0.85, 0.72, 0.50, 1 },
 }
 
-local function render()
-    if not (panel and panel:isValid()) then return end
-    panel:clear()
-    panel:addText("PalSmith  \u{2014}  Mod Manager", 24, COL.accent)
-    panel:addText("F9 close   \u{2022}   1-9 toggle   \u{2022}   changes apply after restart", 12, COL.muted)
-    panel:addText("", 8, COL.muted)
-    current = M.scan()
-    for i, mod in ipairs(current) do
-        local num = i <= 9 and tostring(i) or " "
-        local state = mod.enabled and "ON " or "off"
-        panel:addRow({
-            { text = num, size = 16, color = COL.index },
-            { text = state, size = 16, color = mod.enabled and COL.on or COL.off },
-            { text = mod.name, size = 16, color = COL.cream },
-            { text = mod.kind, size = 12, color = COL.muted },
-        })
+-- ---- panel state ----
+local panel = nil     -- { widget, tree, leftV, rightV, pc }
+local mods = {}
+local selected = 1
+
+local function findOwner()
+    for _, c in ipairs({ "PalPlayerController", "PlayerController" }) do
+        local pc = FindFirstOf(c); if pc and pc:IsValid() then return pc end
     end
-    if #current == 0 then
-        panel:addText("(no toggleable mods found)", 14, COL.off)
+    local gi = FindFirstOf("GameInstance"); if gi and gi:IsValid() then return gi end
+    return nil
+end
+
+local function buildFrame()
+    local pc = findOwner()
+    if not pc then return nil, "no owner" end
+    local w = nui.construct("/Script/UMG.UserWidget", pc)
+    pcall(function() w:SetPlayerContext(pc) end)
+    local tree = w.WidgetTree
+    if not (tree and tree:IsValid()) then
+        tree = nui.construct("/Script/UMG.WidgetTree", w); w.WidgetTree = tree
+    end
+    pcall(function() w:SetVisibility(0) end)
+
+    local dim = nui.border(tree, { 0, 0, 0, 0.55 })
+    tree.RootWidget = dim
+    local pnl = nui.border(tree, { 0.13, 0.11, 0.09, 0.97 })
+    pcall(function() pnl:SetHorizontalAlignment(2) end)
+    pcall(function() pnl:SetVerticalAlignment(2) end)
+    pcall(function() pnl:SetPadding({ Left = 36, Top = 26, Right = 36, Bottom = 26 }) end)
+    pcall(function() dim:SetContent(pnl) end)
+
+    local rootV = nui.vbox(tree); pcall(function() pnl:SetContent(rootV) end)
+    nui.addV(rootV, nui.text(tree, "PalSmith  \u{2014}  Mod Manager", 26, COL.accent), 2)
+    nui.addV(rootV, nui.text(tree, "Click a mod on the left; toggle on the right. Changes apply after restart.", 12, COL.muted), 2)
+
+    local panes = nui.hbox(tree); nui.addV(rootV, panes, 10)
+    local leftSize = nui.sizeBox(tree, 340, 520)
+    local leftScroll = nui.scrollBox(tree); pcall(function() leftSize:SetContent(leftScroll) end)
+    local leftV = nui.vbox(tree); nui.addScroll(leftScroll, leftV)
+    local rightSize = nui.sizeBox(tree, 520, 520)
+    local rightScroll = nui.scrollBox(tree); pcall(function() rightSize:SetContent(rightScroll) end)
+    local rightV = nui.vbox(tree); nui.addScroll(rightScroll, rightV)
+    nui.addH(panes, leftSize)
+    local sp = nui.addH(panes, rightSize); pcall(function() sp:SetPadding({ Left = 24, Top = 0, Right = 0, Bottom = 0 }) end)
+
+    return { widget = w, tree = tree, leftV = leftV, rightV = rightV, pc = pc }
+end
+
+local function clearBox(vbox)
+    pcall(function() vbox:ClearChildren() end)
+end
+
+local renderRight -- fwd
+
+local function renderLeft()
+    if not panel then return end
+    clearBox(panel.leftV)
+    for i, mod in ipairs(mods) do
+        local mark = mod.enabled and "\u{25CF} " or "\u{25CB} " -- filled/hollow dot
+        local btn = nui.menuButton(panel.tree, panel.pc, mark .. mod.name, function()
+            selected = i
+            renderRight()
+        end)
+        if btn then nui.addV(panel.leftV, btn, 1) end
+    end
+    if #mods == 0 then
+        nui.addV(panel.leftV, nui.text(panel.tree, "(no mods found)", 14, COL.off), 2)
     end
 end
 
-function M.isOpen() return panel ~= nil and panel:isValid() end
+renderRight = function()
+    if not panel then return end
+    clearBox(panel.rightV)
+    local mod = mods[selected]
+    if not mod then return end
+    nui.addV(panel.rightV, nui.text(panel.tree, mod.name, 22, COL.accent), 2)
+    for _, line in ipairs(metaLines(mod)) do
+        -- key in a fixed-width SizeBox so the values line up in a column
+        local ksize = nui.sizeBox(panel.tree, 170, nil)
+        pcall(function() ksize:SetContent(nui.text(panel.tree, line.k, 14, COL.key)) end)
+        local row = nui.hbox(panel.tree)
+        nui.addH(row, ksize)
+        nui.addH(row, nui.text(panel.tree, line.v, 14, COL.cream))
+        nui.addV(panel.rightV, row, 2)
+    end
+    -- toggle button
+    local label = mod.enabled and "Disable this mod" or "Enable this mod"
+    local tbtn = nui.menuButton(panel.tree, panel.pc, label, function()
+        local ok = M.toggle(mod)
+        if ok then
+            mods = M.scan()
+            renderLeft(); renderRight()
+        end
+    end)
+    if tbtn then nui.addV(panel.rightV, tbtn, 14) end
+    nui.addV(panel.rightV, nui.text(panel.tree, "(change applies after you restart the game)", 11, COL.muted), 6)
+end
+
+function M.isOpen() return panel ~= nil and panel.widget and panel.widget:IsValid() end
 
 function M.open()
-    local p, err = ui.newPanel()
+    local p, err = buildFrame()
     if not p then core.err("mod manager: " .. tostring(err)); return end
     panel = p
-    render()
-    panel:show()
-    core.log("mod manager opened")
+    mods = M.scan()
+    selected = math.min(selected, math.max(#mods, 1))
+    renderLeft(); renderRight()
+    pcall(function() panel.widget:AddToViewport(1000) end)
+    core.log("mod manager opened (" .. #mods .. " mods)")
 end
 
 function M.close()
-    if panel then panel:close(); panel = nil end
+    if panel and panel.widget then pcall(function() panel.widget:RemoveFromParent() end) end
+    panel = nil
 end
 
 function M.toggleWindow()
     if M.isOpen() then M.close() else M.open() end
 end
 
--- Called by number keys 1..9 while the window is open.
-function M.activate(index)
-    core.log(string.format("activate(%d): open=%s rows=%d", index, tostring(M.isOpen()), #current))
-    if not M.isOpen() then return end
-    local mod = current[index]
-    if not mod then core.log("activate: no mod at index " .. index); return end
-    local ok, res = M.toggle(mod)
-    if ok then
-        core.log(string.format("toggled %s '%s' -> %s", mod.kind, mod.name, res and "ON" or "off"))
-        render() -- re-scan reflects the change immediately
-    else
-        core.err("toggle failed: " .. tostring(res))
-    end
-end
+-- kept for the F9 fallback path; number keys are unused in the two-pane UI
+function M.activate() end
 
 return M

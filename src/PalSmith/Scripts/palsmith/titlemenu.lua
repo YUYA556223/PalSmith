@@ -6,7 +6,8 @@
 -- Title layout (from V7a):
 --   PalUITitleBase.WidgetTree.RootWidget -> ... -> VerticalBox_0 (button column)
 --   each entry: SizeBox_N -> WBP_Title_MenuButton (Test_Content label + CommonUI button)
-local core = require("palsmith.core")
+local core   = require("palsmith.core")
+local clicks = require("palsmith.clicks")
 
 local M = {}
 
@@ -14,7 +15,6 @@ local BTN_CLASS = "/Game/Pal/Blueprint/UI/UserInterface/Title/WBP_Title_MenuButt
 
 local entries = {}   -- { label=, onClick=, invButton= }  registered menu entries
 local injected = false
-local clickHooked = false
 
 local function widgetName(w)
     local ok, n = pcall(function() return w:GetFName():ToString() end)
@@ -68,27 +68,28 @@ function M.addEntry(label, onClick)
     injected = false -- force (re)injection so new entries appear
 end
 
-local function installClickHook()
-    if clickHooked then return end
-    local ok = pcall(function()
-        RegisterHook("/Script/CommonUI.CommonButtonBase:HandleButtonClicked", function(self)
-            local clicked
-            local ok2 = pcall(function() clicked = self:get():GetFullName() end)
-            if not ok2 then return end
-            for _, e in ipairs(entries) do
-                if e.invButton and e.invButton:IsValid() then
-                    local okn, name = pcall(function() return e.invButton:GetFullName() end)
-                    if okn and name == clicked then
-                        local oke, err = pcall(e.onClick)
-                        if not oke then core.err("title entry onClick: " .. tostring(err)) end
-                        return
-                    end
-                end
-            end
-        end)
+-- One-time diagnostic: dump a native SizeBox + its VerticalBox slot values so we
+-- can match alignment exactly. Logged once.
+local dumped = false
+local function dumpAlignment(root)
+    if dumped then return end
+    local sb = M and nil
+    local sib = require("palsmith.nativeui").findByName(root, "SizeBox_4")
+    if not (sib and sib:IsValid()) then return end
+    dumped = true
+    local function num(fn) local ok, v = pcall(fn); return ok and tostring(v) or "?" end
+    core.log("ALIGN SizeBox_4 width=" .. num(function() return sib:GetWidthOverride() end)
+        .. " height=" .. num(function() return sib:GetHeightOverride() end))
+    pcall(function()
+        local s = sib.Slot
+        core.log("ALIGN slot HAlign=" .. num(function() return s.HorizontalAlignment end)
+            .. " VAlign=" .. num(function() return s.VerticalAlignment end)
+            .. " pad L=" .. num(function() return s.Padding.Left end)
+            .. " T=" .. num(function() return s.Padding.Top end)
+            .. " R=" .. num(function() return s.Padding.Right end)
+            .. " B=" .. num(function() return s.Padding.Bottom end))
     end)
-    clickHooked = ok
-    core.log(ok and "title: click hook installed" or "title: click hook FAILED")
+    -- also the VerticalBox_0 slot HAlign of a native entry's parent, if different
 end
 
 local function injectEntry(root, vbox, e)
@@ -103,23 +104,37 @@ local function injectEntry(root, vbox, e)
     local label = findByName(btn, "Test_Content")
     if label and label:IsValid() then pcall(function() label:SetText(FText(e.label)) end) end
     e.invButton = findByName(btn, "WBP_PalInvisibleButton")
+    if e.invButton then clicks.register(e.invButton, e.onClick) end
 
-    -- match native entries: wrap in a SizeBox and copy a sibling's slot
+    -- Match native entries: wrap in a SizeBox with the sibling's dimensions, and
+    -- clone the sibling's VerticalBox slot (padding + alignment). The sibling is
+    -- an existing SizeBox_N that is a direct child of VerticalBox_0.
     local sibling = findByName(root, "SizeBox_4")
+    dumpAlignment(root)
     local sizeBox = StaticConstructObject(StaticFindObject("/Script/UMG.SizeBox"), vbox)
+    local w, h
     if sibling and sibling:IsValid() then
-        pcall(function() sizeBox:SetWidthOverride(sibling:GetWidthOverride()) end)
-        pcall(function() sizeBox:SetHeightOverride(sibling:GetHeightOverride()) end)
+        pcall(function() w = sibling:GetWidthOverride() end)
+        pcall(function() h = sibling:GetHeightOverride() end)
     end
+    if w and w > 0 then pcall(function() sizeBox:SetWidthOverride(w) end) end
+    if h and h > 0 then pcall(function() sizeBox:SetHeightOverride(h) end) end
     pcall(function() sizeBox:SetContent(btn) end)
 
     local slot = vbox:AddChildToVerticalBox(sizeBox)
+    local copied = false
     pcall(function()
         local ss = sibling.Slot
         slot:SetPadding(ss.Padding)
         slot:SetHorizontalAlignment(ss.HorizontalAlignment)
         slot:SetVerticalAlignment(ss.VerticalAlignment)
+        copied = true
     end)
+    if not copied then
+        pcall(function() slot:SetHorizontalAlignment(1) end) -- HAlign_Left
+        pcall(function() slot:SetPadding({ Left = 0, Top = 4, Right = 0, Bottom = 4 }) end)
+    end
+    core.log("title entry '" .. e.label .. "' injected (w=" .. tostring(w) .. " slotCopied=" .. tostring(copied) .. ")")
     return true
 end
 
@@ -143,7 +158,7 @@ end
 
 -- Start watching for the title screen. Re-checks so entries survive menu rebuilds.
 function M.start()
-    installClickHook()
+    clicks.install()
     local ok = pcall(function()
         LoopAsync(2000, function()
             ExecuteInGameThread(function()
