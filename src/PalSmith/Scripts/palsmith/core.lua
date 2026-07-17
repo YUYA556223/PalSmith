@@ -1,7 +1,7 @@
 -- PalSmith core: logging, file helpers, tiny utilities.
 local M = {}
 
-M.VERSION = "0.2.0"
+M.VERSION = "0.3.0"
 -- Highest pack.jsonc formatVersion this runtime understands. A pack declaring a
 -- higher formatVersion is treated as incompatible (parser gate, distinct from
 -- the requiresSmith feature gate).

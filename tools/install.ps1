@@ -8,7 +8,8 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$GameDir,
-    [switch]$WithExample
+    [switch]$WithExample,
+    [switch]$WithLogistics
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,12 +19,16 @@ $ErrorActionPreference = "Stop"
 #   release zip: install.ps1 next to PalSmith/ + ExamplePack/
 $here = $PSScriptRoot
 if (Test-Path (Join-Path $here "PalSmith")) {
-    $runtimeSrc = Join-Path $here "PalSmith"
-    $exampleSrc = Join-Path $here "ExamplePack"
+    $runtimeSrc   = Join-Path $here "PalSmith"
+    $exampleSrc   = Join-Path $here "ExamplePack"
+    $logisticsSrc = Join-Path $here "PalLogistics"
+    $logiPackSrc  = Join-Path $here "PalLogisticsPack"
 } else {
     $repo = Split-Path -Parent $here
-    $runtimeSrc = Join-Path $repo "src\PalSmith"
-    $exampleSrc = Join-Path $repo "packs\ExamplePack"
+    $runtimeSrc   = Join-Path $repo "src\PalSmith"
+    $exampleSrc   = Join-Path $repo "packs\ExamplePack"
+    $logisticsSrc = Join-Path $repo "src\PalLogistics"
+    $logiPackSrc  = Join-Path $repo "packs\PalLogisticsPack"
 }
 
 # Locate the Win64 binaries dir (client and server layouts differ one level).
@@ -51,6 +56,16 @@ if ($WithExample) {
     $packDst = Join-Path $modsDir "PalSchema\mods\ExamplePack"
     Copy-Item $exampleSrc (Join-Path $modsDir "PalSchema\mods") -Recurse -Force
     Write-Host "OK   ExamplePack -> $packDst" -ForegroundColor Green
+}
+
+# PalLogistics (companion mod + its data pack)
+if ($WithLogistics) {
+    $logiDst = Join-Path $modsDir "PalLogistics"
+    New-Item -ItemType Directory -Force -Path $logiDst | Out-Null
+    Copy-Item (Join-Path $logisticsSrc "*") $logiDst -Recurse -Force
+    New-Item -ItemType File -Force -Path (Join-Path $logiDst "enabled.txt") | Out-Null
+    Copy-Item $logiPackSrc (Join-Path $modsDir "PalSchema\mods") -Recurse -Force
+    Write-Host "OK   PalLogistics -> $logiDst (+ PalLogisticsPack)" -ForegroundColor Green
 }
 
 Write-Host "Done. Start the game and check ue4ss\UE4SS.log for [PalSmith] lines."

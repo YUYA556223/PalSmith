@@ -12,7 +12,7 @@ M.EVENTS = {
     onUse      = { kind = "dispatch", dispatched = true },
     onPlace    = { kind = "dispatch", dispatched = true },
     onInteract = { kind = "dispatch", dispatched = true },
-    onTick     = { kind = "poll",     dispatched = false }, -- reserved: needs per-id actor enumeration
+    onTick     = { kind = "poll",     dispatched = true }, -- dispatched by ticker.lua (poll, not a hook)
     onCraft    = { kind = "dispatch", dispatched = false }, -- reserved: hook target unverified
 }
 

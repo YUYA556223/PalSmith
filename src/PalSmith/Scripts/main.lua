@@ -20,6 +20,8 @@ local registry   = require("palsmith.registry")
 local events     = require("palsmith.events")
 local modmanager = require("palsmith.modmanager")
 local titlemenu  = require("palsmith.titlemenu")
+local ticker     = require("palsmith.ticker")
+local components = require("palsmith.components")
 
 core.log("PalSmith v" .. core.VERSION .. " starting")
 
@@ -31,6 +33,7 @@ local ok, err = pcall(function()
     registry.loadAll(packsDir)
     events.install()
     events.startReadyWatch()
+    ticker.start()          -- central tick: entity scan + onTick + batched flush
 end)
 if not ok then
     core.err("startup failed: " .. tostring(err))
@@ -59,12 +62,24 @@ pcall(function()
     core.log("mod manager key bound: F9")
 end)
 
--- Public API for other Lua mods.
+-- Public API for other Lua mods (companion mods like PalLogistics call these).
 local actions = require("palsmith.actions")
+local entity  = require("palsmith.entity")
 _G.PalSmith = {
     version = core.VERSION,
+    -- actions
     registerHandler = actions.registerHandler,     -- ("ns:name", fn(args, ctx))
     registerAction = actions.register,             -- DEPRECATED alias -> smith:name
+    -- entity framework (the OOP-like extension API)
+    defineEntity = entity.defineEntity,            -- { id, onPlace, onLoad, onTick, onInteract, onRemove, ... }
+    getEntity = entity.getEntity,
+    onEntity = entity.on,                          -- ("add"|"remove", fn(instance))
+    onPlace = entity.onPlace,                      -- fn(buildId, pos, player) for ANY placement (diagnostics)
+    registerComponent = components.registerFactory,-- (kind, factory(instance,spec)->component)
+    getComponent = components.get,                 -- (target, name) -> component | nil
+    -- misc
     resolveId = require("palsmith.ids").resolve,
+    spatial = require("palsmith.spatial"),         -- neighbors/keys for consumers
     registry = registry,                           -- read-only: status/loadOrder/packs
+    entity = entity,                               -- read-only: instances/instanceForActor
 }

@@ -1,0 +1,10 @@
+{
+    "$schema": "https://raw.githubusercontent.com/YUYA556223/PalSmith/main/schemas/pack.schema.json",
+    "formatVersion": 2,
+    "id": "logi",
+    "name": "PalLogistics Pack",
+    "version": "0.1.0",
+    "requiresSmith": ">=0.3",
+    "authors": ["PalSmith"],
+    "homepage": "https://github.com/YUYA556223/PalSmith"
+}

@@ -12,6 +12,7 @@ local registry  = require("palsmith.registry")
 local actions   = require("palsmith.actions")
 local mesh      = require("palsmith.mesh")
 local eventspec = require("palsmith.eventspec")
+local entity    = require("palsmith.entity")
 
 local M = { hooksRegistered = 0, hooksTotal = 0, worldReady = false }
 
@@ -100,9 +101,11 @@ function M.install()
     -- Guard against the event whitelist drifting: the events we hook here must
     -- exactly equal eventspec's dispatched set. If a new dispatched event is
     -- added to eventspec without a hook (or vice-versa), warn loudly.
+    -- Only HOOK-driven (kind=="dispatch") events need a RegisterHook here; poll
+    -- events (kind=="poll", e.g. onTick) are driven by ticker.lua, not a hook.
     M._dispatchTargets = { onUse = true, onPlace = true, onInteract = true }
     for _, ev in ipairs(eventspec.dispatchedList()) do
-        if not M._dispatchTargets[ev] then
+        if eventspec.EVENTS[ev].kind == "dispatch" and not M._dispatchTargets[ev] then
             core.warn("eventspec marks '" .. ev .. "' dispatched but events.lua has no hook for it")
         end
     end
@@ -117,12 +120,23 @@ function M.install()
         if not ok then core.err("onUse handler: " .. tostring(err)) end
     end)
 
-    -- onPlace (build request carries the id) -----------------------------
-    tryHook("/Script/Pal.PalNetworkPlayerComponent:RequestBuild_ToServer", function(self, buildObjectId)
+    -- onPlace (build request carries the id + location) ------------------
+    -- Signature: RequestBuild_ToServer(FName BuildObjectId, FVector Location, FQuat Rotation, ...)
+    tryHook("/Script/Pal.PalNetworkPlayerComponent:RequestBuild_ToServer", function(self, buildObjectId, location)
         if not M.worldReady then return end
         local ok, err = pcall(function()
             local id = get(buildObjectId):ToString()
-            dispatch("onPlace", id, { player = FindFirstOf("PalPlayerCharacter") })
+            -- Capture the placement position (seed for entity identity). The actor
+            -- doesn't exist yet, so the entity manager reconciles this against the
+            -- real GetActorLocation once the scan sees the new actor.
+            local pos = nil
+            pcall(function()
+                local loc = get(location)
+                if loc then pos = { x = loc.X, y = loc.Y, z = loc.Z } end
+            end)
+            local player = FindFirstOf("PalPlayerCharacter")
+            dispatch("onPlace", id, { player = player })            -- v0.2 JSON behaviors
+            pcall(entity.onPlaceRequest, id, pos, player)           -- v0.3 entity intent
         end)
         if not ok then core.err("onPlace handler: " .. tostring(err)) end
     end)
@@ -147,7 +161,22 @@ function M.install()
             local cls = building:GetClass():GetFullName()
             local id = cls:match("BP_BuildObject_([%w_]+)_C") or cls
             local ctx = { player = otherActor, actor = building }
-            dispatch("onInteract", id, ctx)
+            dispatch("onInteract", id, ctx)                    -- v0.2 JSON behaviors
+
+            -- v0.3 entity dispatch: resolve the placed instance by ACTOR (position
+            -- fallback), so reused-BP buildings still route to the right entity.
+            local inst = entity.instanceForActor(building)
+            if not inst then
+                local ep = pcall(function() return building:K2_GetActorLocation() end) and building:K2_GetActorLocation() or nil
+                if ep then
+                    local def = entity.byBuildId[id]
+                    if def then inst = entity.instanceAt(
+                        require("palsmith.spatial").posKey(id, { x = ep.X, y = ep.Y, z = ep.Z }, def.gridCm)) end
+                end
+            end
+            if inst and inst.def.onInteract then
+                pcall(inst.def.onInteract, inst, { event = "onInteract", player = otherActor, actor = building })
+            end
 
             -- lazy mesh attach: reused blueprints can't be told apart by class,
             -- so custom ids resolved via the build tables attach on first touch

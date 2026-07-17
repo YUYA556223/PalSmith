@@ -61,6 +61,17 @@ handlers["smith:spawn_mesh"] = function(args, ctx)
     })
 end
 
+-- open the entity menu for the placed actor being interacted with. Data-only
+-- packs can use this from an onInteract behavior; the actor is resolved to its
+-- entity instance (position/actor keyed, so reused-BP buildings still route).
+handlers["smith:open_menu"] = function(args, ctx)
+    assert(ctx.actor, "open_menu needs an interacted actor (onInteract only)")
+    local entity = require("palsmith.entity")
+    local inst = entity.instanceForActor(ctx.actor)
+    assert(inst, "no entity instance bound to this actor")
+    inst:openMenu(args)
+end
+
 -- ---- normalization / back-compat shim ----
 local deprecatedWarned = {}
 local ARGS_SKIP = { action = true, cooldownSec = true, when = true }

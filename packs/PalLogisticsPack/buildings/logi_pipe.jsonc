@@ -1,0 +1,49 @@
+// PalLogistics Transport Pipe — a placeable that reuses the WorkBench BP (proven
+// V1 pattern; a real pipe mesh comes later via PalSmith runtime meshes). Its
+// entity logic (tick push) is registered in the PalLogistics Lua mod, dispatched
+// by position so the reused BP class name doesn't matter.
+{
+    "logi_Pipe": {
+        "Name": "Transport Pipe",
+        "Description": "Moves items between adjacent storage. (PalLogistics)",
+        "BlueprintClassName": "BP_BuildObject_WorkBench",
+        "BlueprintClassSoft": "/Game/Pal/Blueprint/MapObject/BuildObject/BP_BuildObject_WorkBench.BP_BuildObject_WorkBench_C",
+        "IconTexture": "/Game/Pal/Texture/BuildObject/PNG/T_icon_buildObject_WorkBench.T_icon_buildObject_WorkBench",
+        "Hp": 500,
+        "Defense": 1,
+        "MaterialType": "Wood",
+        "MaterialSubType": "Wood",
+        "bBelongToBaseCamp": true,
+        "DeteriorationDamage": 0.0,
+        "BuildingData": {
+            "TypeA": "Product",
+            "TypeB": "Prod_Craft",
+            "Rank": 1,
+            "RequiredBuildWorkAmount": 1.0,
+            "Material1_Id": "Wood",
+            "Material1_Count": 2
+        },
+        "Assignments": [
+            {
+                "WorkSuitability": "Handcraft",
+                "WorkSuitabilityRank": 1,
+                "bPlayerWorkable": true,
+                "bBaseCampWorkerWorkable": false,
+                "WorkType": "CommonTemp",
+                "WorkActionType": "CommonWork",
+                "WorkerMaxNum": 0,
+                "AffectSanityValue": 0.0,
+                "AffectFullStomachValue": 0.0
+            }
+        ],
+        "Technology": {
+            "UnlockBuildObjects": [ "logi_Pipe" ],
+            "IconName": "WorkBench",
+            "IsBossTechnology": false,
+            "Name": "Transport Pipe",
+            "Description": "PalLogistics: moves items between adjacent storage.",
+            "LevelCap": 3,
+            "Cost": 1
+        }
+    }
+}
