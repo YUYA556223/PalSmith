@@ -13,6 +13,14 @@ local registry = require("palsmith.registry")
 
 local M = {}
 
+-- ---- colours (defined early: metaLines/renderLeft reference these) ----
+local COL = {
+    accent = { 0.98, 0.80, 0.38, 1 }, cream = { 0.96, 0.93, 0.86, 1 },
+    muted = { 0.72, 0.68, 0.60, 1 }, on = { 0.55, 0.85, 0.50, 1 },
+    off = { 0.80, 0.55, 0.45, 1 }, key = { 0.85, 0.72, 0.50, 1 },
+    err = { 0.90, 0.42, 0.38, 1 }, warn = { 0.95, 0.72, 0.35, 1 },
+}
+
 -- ---- filesystem ----
 local function modsDir()
     local here = debug.getinfo(1, "S").source:match("@?(.*[\\/])") or ""
@@ -173,14 +181,6 @@ function M.toggle(mod)
     end
     return false, "unknown kind"
 end
-
--- ---- colours ----
-local COL = {
-    accent = { 0.98, 0.80, 0.38, 1 }, cream = { 0.96, 0.93, 0.86, 1 },
-    muted = { 0.72, 0.68, 0.60, 1 }, on = { 0.55, 0.85, 0.50, 1 },
-    off = { 0.80, 0.55, 0.45, 1 }, key = { 0.85, 0.72, 0.50, 1 },
-    err = { 0.90, 0.42, 0.38, 1 }, warn = { 0.95, 0.72, 0.35, 1 },
-}
 
 -- ---- panel state ----
 local panel = nil     -- { widget, tree, leftV, rightV, pc }
