@@ -195,12 +195,13 @@ local function renderLeft()
     if not panel then return end
     clearBox(panel.leftV)
     for i, mod in ipairs(mods) do
-        local mark = mod.enabled and "\u{25CF} " or "\u{25CB} " -- filled/hollow dot
-        local btn = nui.menuButton(panel.tree, panel.pc, mark .. mod.name, function()
+        local mark = mod.enabled and "\u{25CF}  " or "\u{25CB}  " -- filled/hollow dot
+        local rowColor = mod.enabled and COL.cream or COL.muted
+        local row = nui.clickableRow(panel.tree, panel.pc, mark .. mod.name, function()
             selected = i
             renderRight()
-        end)
-        if btn then nui.addV(panel.leftV, btn, 1) end
+        end, { size = 18, color = rowColor })
+        if row then nui.addV(panel.leftV, row, 1) end
     end
     if #mods == 0 then
         nui.addV(panel.leftV, nui.text(panel.tree, "(no mods found)", 14, COL.off), 2)
@@ -222,15 +223,16 @@ renderRight = function()
         nui.addH(row, nui.text(panel.tree, line.v, 14, COL.cream))
         nui.addV(panel.rightV, row, 2)
     end
-    -- toggle button
-    local label = mod.enabled and "Disable this mod" or "Enable this mod"
-    local tbtn = nui.menuButton(panel.tree, panel.pc, label, function()
+    -- toggle button (same left-aligned native row style)
+    local label = mod.enabled and "\u{2716}  Disable this mod" or "\u{2714}  Enable this mod"
+    local tcolor = mod.enabled and COL.off or COL.on
+    local tbtn = nui.clickableRow(panel.tree, panel.pc, label, function()
         local ok = M.toggle(mod)
         if ok then
             mods = M.scan()
             renderLeft(); renderRight()
         end
-    end)
+    end, { size = 19, color = tcolor })
     if tbtn then nui.addV(panel.rightV, tbtn, 14) end
     nui.addV(panel.rightV, nui.text(panel.tree, "(change applies after you restart the game)", 11, COL.muted), 6)
 end

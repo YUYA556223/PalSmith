@@ -169,6 +169,30 @@ function M.menuButton(tree, pc, label, onClick)
     return btn, inv
 end
 
+-- A clickable, LEFT-ALIGNED row that still looks native. The menu button provides
+-- the native frame + hover + click, but its own label is blanked and a TextBlock
+-- we control is overlaid on top (left-aligned). The text is hit-test invisible so
+-- clicks pass through to the button beneath. Returns (rowWidget, invBtn).
+function M.clickableRow(tree, pc, label, onClick, opts)
+    opts = opts or {}
+    local overlay = M.overlay(tree)
+    -- native button underneath (blank its centered label)
+    local btn, inv = M.menuButton(tree, pc, "", onClick)
+    if btn then
+        local bs = overlay:AddChildToOverlay(btn)
+        pcall(function() bs:SetHorizontalAlignment(M.HALIGN.FILL) end)
+        pcall(function() bs:SetVerticalAlignment(M.VALIGN.FILL) end)
+    end
+    -- our left-aligned label on top
+    local t = M.text(tree, label, opts.size or 18, opts.color)
+    pcall(function() t:SetVisibility(2) end) -- ESlateVisibility::HitTestInvisible
+    local ts = overlay:AddChildToOverlay(t)
+    pcall(function() ts:SetHorizontalAlignment(M.HALIGN.LEFT) end)
+    pcall(function() ts:SetVerticalAlignment(M.VALIGN.CENTER) end)
+    pcall(function() ts:SetPadding({ Left = opts.indent or 28, Top = 0, Right = 12, Bottom = 0 }) end)
+    return overlay, inv
+end
+
 -- Generic: clone any Palworld BP widget, optionally set a label child's text and
 -- wire a click. `opts = { label=, labelChild=, clickChild=, onClick= }`.
 function M.cloneGameWidget(tree, pc, classPath, opts)
@@ -187,10 +211,26 @@ function M.cloneGameWidget(tree, pc, classPath, opts)
 end
 
 -- ---- slot helpers (return the created slot for further tweaking) ----
+local dumpedSlot = false
+
+-- Set a VerticalBoxSlot's horizontal alignment robustly: try the setter AND
+-- direct property assignment (UE4SS enum-byte setters sometimes no-op), then read
+-- it back once so we can see which stuck.
+local function setVAlign(slot, halign)
+    pcall(function() slot:SetHorizontalAlignment(halign) end)
+    pcall(function() slot.HorizontalAlignment = halign end)
+    if not dumpedSlot then
+        dumpedSlot = true
+        local ok, v = pcall(function() return slot.HorizontalAlignment end)
+        core.log("SLOTDIAG after set HAlign -> " .. (ok and tostring(v) or "?"))
+    end
+end
+
 function M.addV(vbox, child, padTop)
     local slot = vbox:AddChildToVerticalBox(child)
     pcall(function() slot:SetPadding({ Left = 0, Top = padTop or 2, Right = 0, Bottom = padTop or 2 }) end)
-    pcall(function() slot:SetHorizontalAlignment(M.HALIGN.LEFT) end)
+    pcall(function() slot.Padding = { Left = 0, Top = padTop or 2, Right = 0, Bottom = padTop or 2 } end)
+    setVAlign(slot, M.HALIGN.LEFT)
     return slot
 end
 

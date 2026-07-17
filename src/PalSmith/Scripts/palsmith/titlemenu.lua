@@ -122,19 +122,15 @@ local function injectEntry(root, vbox, e)
     pcall(function() sizeBox:SetContent(btn) end)
 
     local slot = vbox:AddChildToVerticalBox(sizeBox)
-    local copied = false
-    pcall(function()
-        local ss = sibling.Slot
-        slot:SetPadding(ss.Padding)
-        slot:SetHorizontalAlignment(ss.HorizontalAlignment)
-        slot:SetVerticalAlignment(ss.VerticalAlignment)
-        copied = true
-    end)
-    if not copied then
-        pcall(function() slot:SetHorizontalAlignment(1) end) -- HAlign_Left
-        pcall(function() slot:SetPadding({ Left = 0, Top = 4, Right = 0, Bottom = 4 }) end)
-    end
-    core.log("title entry '" .. e.label .. "' injected (w=" .. tostring(w) .. " slotCopied=" .. tostring(copied) .. ")")
+    -- Set alignment via BOTH setter and direct property assignment (UE4SS enum
+    -- setters can silently no-op, leaving the default HAlign_Fill which centers).
+    pcall(function() slot:SetHorizontalAlignment(1) end)          -- HAlign_Left
+    pcall(function() slot.HorizontalAlignment = 1 end)
+    pcall(function() slot:SetPadding({ Left = 0, Top = 3, Right = 0, Bottom = 3 }) end)
+    pcall(function() slot.Padding = { Left = 0, Top = 3, Right = 0, Bottom = 3 } end)
+    local readback = "?"
+    pcall(function() readback = tostring(slot.HorizontalAlignment) end)
+    core.log("title entry '" .. e.label .. "' injected (HAlign readback=" .. readback .. ")")
     return true
 end
 
