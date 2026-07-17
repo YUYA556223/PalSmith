@@ -183,9 +183,11 @@ function M.clickableRow(tree, pc, label, onClick, opts)
         pcall(function() bs:SetHorizontalAlignment(M.HALIGN.FILL) end)
         pcall(function() bs:SetVerticalAlignment(M.VALIGN.FILL) end)
     end
-    -- our left-aligned label on top
+    -- our left-aligned label on top. ESlateVisibility: Visible=0 Collapsed=1
+    -- Hidden=2 HitTestInvisible=3 SelfHitTestInvisible=4. Use 3 so the text
+    -- shows but clicks pass through to the button beneath.
     local t = M.text(tree, label, opts.size or 18, opts.color)
-    pcall(function() t:SetVisibility(2) end) -- ESlateVisibility::HitTestInvisible
+    pcall(function() t:SetVisibility(3) end) -- HitTestInvisible
     local ts = overlay:AddChildToOverlay(t)
     pcall(function() ts:SetHorizontalAlignment(M.HALIGN.LEFT) end)
     pcall(function() ts:SetVerticalAlignment(M.VALIGN.CENTER) end)
