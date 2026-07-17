@@ -44,16 +44,25 @@ local function bindKeys()
             if not okk then core.err("mod manager toggle: " .. tostring(e)) end
         end)
     end)
-    local numberKeys = { Key.ONE, Key.TWO, Key.THREE, Key.FOUR, Key.FIVE,
-                         Key.SIX, Key.SEVEN, Key.EIGHT, Key.NINE }
-    for i, k in ipairs(numberKeys) do
-        pcall(RegisterKeyBind, k, function()
-            ExecuteInGameThread(function()
-                pcall(modmanager.activate, i)
+    -- Number-key enum names vary; probe each and log which actually bound.
+    local numberKeys = {
+        { "1", Key.ONE }, { "2", Key.TWO }, { "3", Key.THREE }, { "4", Key.FOUR },
+        { "5", Key.FIVE }, { "6", Key.SIX }, { "7", Key.SEVEN }, { "8", Key.EIGHT },
+        { "9", Key.NINE },
+    }
+    local bound = {}
+    for i, pair in ipairs(numberKeys) do
+        local label, key = pair[1], pair[2]
+        local ok = false
+        if key ~= nil then
+            ok = pcall(RegisterKeyBind, key, function()
+                core.log("number key " .. label .. " fired")
+                ExecuteInGameThread(function() pcall(modmanager.activate, i) end)
             end)
-        end)
+        end
+        table.insert(bound, label .. (ok and "+" or "-"))
     end
-    core.log("mod manager keys bound (F9 to open, 1-9 to toggle)")
+    core.log("mod manager keys bound: F9 open; numbers " .. table.concat(bound, " "))
 end
 pcall(bindKeys)
 

@@ -112,25 +112,35 @@ end
 local panel = nil
 local current = {} -- displayed mods, index-aligned with number keys
 
+-- Palworld-ish palette: warm cream text, amber accent, muted browns.
+local COL = {
+    accent  = { 0.98, 0.80, 0.38, 1.0 }, -- amber title
+    cream   = { 0.96, 0.93, 0.86, 1.0 }, -- primary text
+    muted   = { 0.72, 0.68, 0.60, 1.0 }, -- secondary
+    on      = { 0.55, 0.85, 0.50, 1.0 }, -- enabled green
+    off     = { 0.70, 0.55, 0.48, 1.0 }, -- disabled clay
+    index   = { 0.85, 0.72, 0.50, 1.0 },
+}
+
 local function render()
     if not (panel and panel:isValid()) then return end
     panel:clear()
-    panel:addText("PalSmith Mod Manager", 22, { 1.0, 0.85, 0.4, 1.0 })
-    panel:addText("Press 1-9 to toggle. Changes apply after restart.", 12, { 0.6, 0.65, 0.75, 1.0 })
+    panel:addText("PalSmith  \u{2014}  Mod Manager", 24, COL.accent)
+    panel:addText("F9 close   \u{2022}   1-9 toggle   \u{2022}   changes apply after restart", 12, COL.muted)
+    panel:addText("", 8, COL.muted)
     current = M.scan()
     for i, mod in ipairs(current) do
-        local num = i <= 9 and tostring(i) or "-"
-        local state = mod.enabled and "[ON ]" or "[off]"
-        local color = mod.enabled and { 0.5, 0.9, 0.5, 1.0 } or { 0.6, 0.6, 0.65, 1.0 }
+        local num = i <= 9 and tostring(i) or " "
+        local state = mod.enabled and "ON " or "off"
         panel:addRow({
-            { text = num .. ".", size = 15, color = { 0.7, 0.75, 0.85, 1.0 } },
-            { text = state, size = 15, color = color },
-            { text = mod.name, size = 15, color = { 0.9, 0.9, 0.95, 1.0 } },
-            { text = "(" .. mod.kind .. ")", size = 12, color = { 0.5, 0.55, 0.65, 1.0 } },
+            { text = num, size = 16, color = COL.index },
+            { text = state, size = 16, color = mod.enabled and COL.on or COL.off },
+            { text = mod.name, size = 16, color = COL.cream },
+            { text = mod.kind, size = 12, color = COL.muted },
         })
     end
     if #current == 0 then
-        panel:addText("(no toggleable mods found)", 14, { 0.7, 0.5, 0.5, 1.0 })
+        panel:addText("(no toggleable mods found)", 14, COL.off)
     end
 end
 
@@ -155,9 +165,10 @@ end
 
 -- Called by number keys 1..9 while the window is open.
 function M.activate(index)
+    core.log(string.format("activate(%d): open=%s rows=%d", index, tostring(M.isOpen()), #current))
     if not M.isOpen() then return end
     local mod = current[index]
-    if not mod then return end
+    if not mod then core.log("activate: no mod at index " .. index); return end
     local ok, res = M.toggle(mod)
     if ok then
         core.log(string.format("toggled %s '%s' -> %s", mod.kind, mod.name, res and "ON" or "off"))

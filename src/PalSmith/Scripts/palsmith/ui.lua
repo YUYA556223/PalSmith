@@ -30,29 +30,55 @@ end
 local Panel = {}
 Panel.__index = Panel
 
+-- Find an owner/outer for the widget. Works both in-world and on the title
+-- screen (where there is no PalPlayerCharacter but usually a PlayerController).
+local function findOwner()
+    for _, cls in ipairs({ "PalPlayerController", "PlayerController" }) do
+        local pc = FindFirstOf(cls)
+        if pc and pc:IsValid() then return pc, cls end
+    end
+    -- last resort: the game instance (valid on the title screen), used only as
+    -- the construction Outer; AddToViewport still targets the game viewport.
+    local gi = FindFirstOf("GameInstance")
+    if gi and gi:IsValid() then return gi, "GameInstance" end
+    return nil, nil
+end
+
 function M.newPanel(opts)
     opts = opts or {}
-    local pc = FindFirstOf("PalPlayerController")
-    if not (pc and pc:IsValid()) then return nil, "no PalPlayerController" end
+    local owner, ownerKind = findOwner()
+    if not owner then return nil, "no owner (PlayerController/GameInstance) found" end
+    core.log("ui: owner = " .. tostring(ownerKind))
 
     local self = setmetatable({ rows = {} }, Panel)
     local ok, err = pcall(function()
-        local w = make("/Script/UMG.UserWidget", pc)
-        pcall(function() w:SetPlayerContext(pc) end)
+        local w = make("/Script/UMG.UserWidget", owner)
+        pcall(function() w:SetPlayerContext(owner) end)
         local tree = w.WidgetTree
         if not (tree and tree:IsValid()) then
             tree = make("/Script/UMG.WidgetTree", w)
             w.WidgetTree = tree
         end
 
-        -- Border (background) -> VerticalBox (rows)
-        local border = make("/Script/UMG.Border", tree)
-        pcall(function()
-            border:SetBrushColor(unpackColor(opts.bg or { 0.03, 0.03, 0.06, 0.92 }))
-        end)
+        -- Full-screen dim layer -> centered themed panel -> VerticalBox (rows).
+        local dim = make("/Script/UMG.Border", tree)
+        pcall(function() dim:SetBrushColor(unpackColor({ 0.0, 0.0, 0.0, 0.55 })) end)
+        pcall(function() dim:SetPadding({ Left = 0, Top = 0, Right = 0, Bottom = 0 }) end)
+        tree.RootWidget = dim
+
+        local panelBorder = make("/Script/UMG.Border", tree)
+        -- warm dark brown, Palworld-ish
+        pcall(function() panelBorder:SetBrushColor(unpackColor(opts.bg or { 0.13, 0.11, 0.09, 0.97 })) end)
+        pcall(function() panelBorder:SetHorizontalAlignment(2) end) -- HAlign_Center
+        pcall(function() panelBorder:SetVerticalAlignment(2) end)   -- VAlign_Center
+        pcall(function() panelBorder:SetPadding({ Left = 40, Top = 28, Right = 40, Bottom = 28 }) end)
+        pcall(function() dim:SetContent(panelBorder) end)
+
         local vbox = make("/Script/UMG.VerticalBox", tree)
-        pcall(function() border:SetContent(vbox) end)
-        tree.RootWidget = border
+        pcall(function() panelBorder:SetContent(vbox) end)
+
+        -- make the whole widget receive mouse input (Visible, not hit-invisible)
+        pcall(function() w:SetVisibility(0) end) -- ESlateVisibility::Visible
 
         self.widget = w
         self.tree = tree
