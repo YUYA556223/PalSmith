@@ -51,7 +51,7 @@ if ($vsFound) {
     Todo "If missing, add via VS Installer: 'Desktop development with C++' + 'MSVC v143 (v14.38-17.8)'"
 } else {
     winget install --id Microsoft.VisualStudio.2022.Community -e --accept-source-agreements --accept-package-agreements `
-        --override "--passive --wait --add Microsoft.VisualStudio.Workload.NativeDesktop;includeRecommended --add Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64"
+        --override "--passive --wait --add Microsoft.VisualStudio.Workload.NativeDesktop;includeRecommended --add Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64 --add Microsoft.Net.Component.4.8.SDK --add Microsoft.Net.Component.4.6.2.TargetingPack"
     Ok "VS2022 Community + C++ workload + MSVC v14.38 installed"
 }
 
@@ -102,6 +102,7 @@ if ((Test-Path $bcPath) -and ((Get-Content $bcPath -Raw) -match "VisualStudio202
 <Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">
     <WindowsPlatform>
         <Compiler>VisualStudio2022</Compiler>
+        <CompilerVersion>14.38.33130</CompilerVersion>
     </WindowsPlatform>
 </Configuration>
 "@ | Set-Content -Encoding UTF8 $bcPath
