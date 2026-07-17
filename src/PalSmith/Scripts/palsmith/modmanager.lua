@@ -148,27 +148,39 @@ local function buildFrame()
     end
     pcall(function() w:SetVisibility(0) end)
 
-    local dim = nui.border(tree, { 0, 0, 0, 0.55 })
+    -- Fullscreen overlay: dim (dark, near-opaque) fills the screen; the panel
+    -- fills the dim with margins so it reads as a proper menu, not a small popup.
+    local dim = nui.border(tree, { 0.02, 0.02, 0.03, 0.86 })
     tree.RootWidget = dim
-    local pnl = nui.border(tree, { 0.13, 0.11, 0.09, 0.97 })
-    pcall(function() pnl:SetHorizontalAlignment(2) end)
-    pcall(function() pnl:SetVerticalAlignment(2) end)
-    pcall(function() pnl:SetPadding({ Left = 36, Top = 26, Right = 36, Bottom = 26 }) end)
-    pcall(function() dim:SetContent(pnl) end)
+    local pnl = nui.border(tree, { 0.10, 0.09, 0.08, 0.98 })
+    pcall(function() pnl:SetPadding({ Left = 90, Top = 54, Right = 90, Bottom = 54 }) end)
+    pcall(function() dim:SetContent(pnl) end) -- content fills the border -> fullscreen
 
     local rootV = nui.vbox(tree); pcall(function() pnl:SetContent(rootV) end)
-    nui.addV(rootV, nui.text(tree, "PalSmith  \u{2014}  Mod Manager", 26, COL.accent), 2)
-    nui.addV(rootV, nui.text(tree, "Click a mod on the left; toggle on the right. Changes apply after restart.", 12, COL.muted), 2)
+    nui.addV(rootV, nui.text(tree, "PalSmith  \u{2014}  Mod Manager", 30, COL.accent), 2)
+    nui.addV(rootV, nui.text(tree, "Click a mod on the left; toggle it on the right. Changes apply after restart.", 14, COL.muted), 2)
 
-    local panes = nui.hbox(tree); nui.addV(rootV, panes, 10)
-    local leftSize = nui.sizeBox(tree, 340, 520)
-    local leftScroll = nui.scrollBox(tree); pcall(function() leftSize:SetContent(leftScroll) end)
+    -- Alignment enums: EHorizontalAlignment Fill=0 Left=1 Center=2 Right=3;
+    -- EVerticalAlignment Fill=0 Top=1 Center=2 Bottom=3; ESlateSizeRule Fill=1.
+    local panes = nui.hbox(tree)
+    local paneSlot = nui.addV(rootV, panes, 18)
+    pcall(function() paneSlot:SetHorizontalAlignment(0) end)              -- Fill width
+    pcall(function() paneSlot:SetSize({ SizeRule = 1, Value = 1.0 }) end) -- Fill vertically
+
+    -- left: scrollable mod list (40% width)
+    local leftScroll = nui.scrollBox(tree)
     local leftV = nui.vbox(tree); nui.addScroll(leftScroll, leftV)
-    local rightSize = nui.sizeBox(tree, 520, 520)
-    local rightScroll = nui.scrollBox(tree); pcall(function() rightSize:SetContent(rightScroll) end)
+    local ls = nui.addH(panes, leftScroll)
+    pcall(function() ls:SetSize({ SizeRule = 1, Value = 0.4 }) end)
+    pcall(function() ls:SetVerticalAlignment(0) end)                 -- Fill height
+
+    -- right: scrollable detail (60% width)
+    local rightScroll = nui.scrollBox(tree)
     local rightV = nui.vbox(tree); nui.addScroll(rightScroll, rightV)
-    nui.addH(panes, leftSize)
-    local sp = nui.addH(panes, rightSize); pcall(function() sp:SetPadding({ Left = 24, Top = 0, Right = 0, Bottom = 0 }) end)
+    local rs = nui.addH(panes, rightScroll)
+    pcall(function() rs:SetSize({ SizeRule = 1, Value = 0.6 }) end)
+    pcall(function() rs:SetVerticalAlignment(0) end)
+    pcall(function() rs:SetPadding({ Left = 40, Top = 0, Right = 0, Bottom = 0 }) end)
 
     return { widget = w, tree = tree, leftV = leftV, rightV = rightV, pc = pc }
 end
