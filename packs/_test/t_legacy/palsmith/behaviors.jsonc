@@ -1,0 +1,1 @@
+{ "tlegacy:Thing": { "onUse": [ { "action": "announce", "text": "legacy shape works" } ] } }

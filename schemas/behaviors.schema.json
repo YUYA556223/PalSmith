@@ -10,36 +10,56 @@
         "type": "object",
         "description": "Key: namespaced id ('mypack:Thing') or literal game id ('Wood').",
         "properties": {
-            "onUse": { "$ref": "#/definitions/actionList" },
-            "onPlace": { "$ref": "#/definitions/actionList" },
-            "onInteract": { "$ref": "#/definitions/actionList" }
+            "onUse": { "$ref": "#/definitions/entryList" },
+            "onPlace": { "$ref": "#/definitions/entryList" },
+            "onInteract": { "$ref": "#/definitions/entryList" },
+            "onTick": { "$ref": "#/definitions/entryList", "description": "RESERVED: accepted but not dispatched by PalSmith v0.2." },
+            "onCraft": { "$ref": "#/definitions/entryList", "description": "RESERVED: accepted but not dispatched by PalSmith v0.2." }
         },
         "additionalProperties": false
     },
     "definitions": {
-        "actionList": {
+        "entryList": {
             "type": "array",
             "minItems": 1,
-            "items": { "$ref": "#/definitions/action" }
+            "items": { "oneOf": [ { "$ref": "#/definitions/entry" }, { "$ref": "#/definitions/legacyAction" } ] }
         },
-        "action": {
+        "entry": {
             "type": "object",
+            "description": "v0.2 action entry: a namespaced handler plus its args.",
+            "required": ["handler"],
+            "properties": {
+                "handler": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_]+:[A-Za-z0-9_]+$",
+                    "description": "Namespaced handler, e.g. 'smith:give_item'. Builtins: smith:announce, smith:give_item, smith:spawn_pal, smith:spawn_mesh."
+                },
+                "args": { "type": "object", "description": "Handler-specific arguments." },
+                "when": {
+                    "type": "object",
+                    "description": "Optional predicate. 'chance' (0..1) is implemented; others reserved.",
+                    "properties": { "chance": { "type": "number", "minimum": 0, "maximum": 1 } }
+                },
+                "cooldownSec": { "type": "number", "minimum": 0, "description": "Minimum seconds between firings of this behavior." }
+            },
+            "additionalProperties": false
+        },
+        "legacyAction": {
+            "type": "object",
+            "deprecated": true,
+            "description": "DEPRECATED v0.1 flat shape. Still loads (translated to {handler,args}) with a warning. Migrate to the {handler,args} form.",
             "required": ["action"],
             "properties": {
-                "action": {
-                    "type": "string",
-                    "enum": ["announce", "give_item", "spawn_pal", "spawn_mesh"],
-                    "description": "Handler name. Additional handlers can be registered from Lua via PalSmith.registerAction."
-                },
-                "text": { "type": "string", "description": "announce: message ({id}, {event}, {pack} templates)." },
-                "item": { "type": "string", "description": "give_item: namespaced or literal item id." },
+                "action": { "type": "string", "enum": ["announce", "give_item", "spawn_pal", "spawn_mesh"] },
+                "text": { "type": "string" },
+                "item": { "type": "string" },
                 "count": { "type": "integer", "minimum": 1 },
-                "pal": { "type": "string", "description": "spawn_pal: character id (e.g. Kitsunebi)." },
+                "pal": { "type": "string" },
                 "level": { "type": "integer", "minimum": 1 },
-                "model": { "type": "string", "description": "spawn_mesh: OBJ path relative to the palsmith/ folder." },
+                "model": { "type": "string" },
                 "scale": { "type": "number" },
                 "offset": { "$ref": "#/definitions/vec3" },
-                "cooldownSec": { "type": "number", "minimum": 0, "description": "Minimum seconds between firings of this behavior." }
+                "cooldownSec": { "type": "number", "minimum": 0 }
             },
             "additionalProperties": true
         },

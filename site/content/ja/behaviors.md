@@ -1,8 +1,30 @@
 # Behaviorリファレンス
 
-Behaviorはコンテンツの**イベント**に**アクション**のリストを結び付けます。
+Behaviorはコンテンツの**イベント**に**アクションエントリ**のリストを結び付けます。
 `palsmith/behaviors.jsonc`で宣言し、PalSmithランタイムが検証済みの
 ゲームフックを通じてディスパッチします。
+
+## エントリ文法(v0.2)
+
+各エントリは `{ "handler": "ns:name", "args": { ... } }`。`when`と`cooldownSec`は任意:
+
+```json
+{
+  "mypack:Bench": {
+    "onInteract": [
+      { "handler": "smith:give_item", "args": { "item": "Stone", "count": 5 },
+        "when": { "chance": 0.5 }, "cooldownSec": 30 }
+    ]
+  }
+}
+```
+
+ハンドラは名前空間付き(`smith:*`が組込)。`when.chance`(0..1)で確率発火、
+`cooldownSec`でBehavior全体を間引きます。
+
+> **v0.1からの移行:** 旧フラット形 `{ "action": "give_item", "item": "Wood" }` も
+> 読み込めます(初回に非推奨警告)が、`{ "handler": "smith:give_item", "args": {...} }`
+> へ移行してください。`cooldownSec`はエントリ階層に置きます。
 
 ## イベント
 

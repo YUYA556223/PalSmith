@@ -1,23 +1,23 @@
-// Declarative behaviors: what happens when your content is used/placed/touched.
-// Keys are namespaced ids ("<packid>:<Name>"); they resolve to the PalSchema row
+// Declarative behaviors (v0.2 {handler, args} grammar).
+// Keys are namespaced ids ("<packid>:<Name>") resolving to the PalSchema row
 // FName "<packid>_<Name>". Literal ids (no colon) reference vanilla content.
 {
     "$schema": "https://raw.githubusercontent.com/YUYA556223/PalSmith/main/schemas/behaviors.schema.json",
 
     "example:Potion": {
         "onUse": [
-            { "action": "announce", "text": "The Apprentice Potion fizzes! ({id})" },
-            { "action": "give_item", "item": "Wood", "count": 1 }
+            { "handler": "smith:announce", "args": { "text": "The Apprentice Potion fizzes! ({id})" } },
+            { "handler": "smith:give_item", "args": { "item": "Wood", "count": 1 } }
         ]
     },
 
     "example:Bench": {
         "onPlace": [
-            { "action": "announce", "text": "Apprentice Bench placed. Touch it for a gift." }
+            { "handler": "smith:announce", "args": { "text": "Apprentice Bench placed. Touch it for a gift." } }
         ],
         "onInteract": [
-            { "action": "give_item", "item": "Stone", "count": 5, "cooldownSec": 30 },
-            { "action": "announce", "text": "The bench hums and produces stone." }
+            { "handler": "smith:give_item", "args": { "item": "Stone", "count": 5 }, "cooldownSec": 30 },
+            { "handler": "smith:announce", "args": { "text": "The bench hums and produces stone." } }
         ]
     }
 }

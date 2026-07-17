@@ -152,4 +152,74 @@ function M.decode(text)
     return nil, res
 end
 
+-- ---- encode (used by store.lua for state snapshots) ----
+-- Minimal, stable JSON encoder. Object keys are sorted for deterministic diffs.
+-- A table is treated as an array when it is empty or has a contiguous 1..#t
+-- integer key range; otherwise as an object (string keys).
+local ESC = { ['"'] = '\\"', ["\\"] = "\\\\", ["\n"] = "\\n", ["\r"] = "\\r",
+              ["\t"] = "\\t", ["\b"] = "\\b", ["\f"] = "\\f" }
+
+local function encodeString(s)
+    return '"' .. tostring(s):gsub('[%z\1-\31"\\]', function(c)
+        return ESC[c] or string.format("\\u%04x", string.byte(c))
+    end) .. '"'
+end
+
+local function isArray(t)
+    local n = 0
+    for k in pairs(t) do
+        if type(k) ~= "number" or k % 1 ~= 0 or k < 1 then return false end
+        n = n + 1
+    end
+    return n == #t
+end
+
+local encodeValue
+
+local function encodeTable(t, out)
+    if next(t) == nil then table.insert(out, "{}"); return end
+    if isArray(t) then
+        table.insert(out, "[")
+        for i = 1, #t do
+            if i > 1 then table.insert(out, ",") end
+            encodeValue(t[i], out)
+        end
+        table.insert(out, "]")
+    else
+        local keys = {}
+        for k in pairs(t) do table.insert(keys, tostring(k)) end
+        table.sort(keys)
+        table.insert(out, "{")
+        for i, k in ipairs(keys) do
+            if i > 1 then table.insert(out, ",") end
+            table.insert(out, encodeString(k))
+            table.insert(out, ":")
+            encodeValue(t[k], out)
+        end
+        table.insert(out, "}")
+    end
+end
+
+encodeValue = function(v, out)
+    local tv = type(v)
+    if v == nil then table.insert(out, "null")
+    elseif tv == "boolean" then table.insert(out, tostring(v))
+    elseif tv == "number" then
+        -- avoid "1e+20"/NaN surprises; integers stay integer-formatted
+        if v ~= v or v == math.huge or v == -math.huge then table.insert(out, "null")
+        elseif v % 1 == 0 then table.insert(out, string.format("%d", v))
+        else table.insert(out, tostring(v)) end
+    elseif tv == "string" then table.insert(out, encodeString(v))
+    elseif tv == "table" then encodeTable(v, out)
+    else table.insert(out, "null") end
+end
+
+-- Returns a JSON string, or nil + error.
+function M.encode(value)
+    local out = {}
+    local ok, err = pcall(encodeValue, value, out)
+    if not ok then return nil, err end
+    return table.concat(out)
+end
+
 return M

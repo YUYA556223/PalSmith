@@ -1,9 +1,10 @@
--- PalSmith runtime v0.1 - content framework for Palworld.
+-- PalSmith runtime v0.2 - content framework for Palworld.
 -- https://github.com/YUYA556223/PalSmith
 --
 -- Runs as a UE4SS Lua mod next to PalSchema. PalSchema owns the data tables
--- (items/recipes/buildings/resources); PalSmith adds namespaced ids, declarative
--- behaviors (onUse/onPlace/onInteract) and runtime meshes on top.
+-- (items/recipes/buildings/resources); PalSmith adds namespaced ids, a Fabric-
+-- style dependency resolver, an id registry, declarative {handler,args} behaviors
+-- (onUse/onPlace/onInteract) and runtime meshes on top.
 --
 -- Install layout:
 --   ue4ss/Mods/PalSmith/Scripts/main.lua        <- this file
@@ -26,6 +27,7 @@ core.log("PalSmith v" .. core.VERSION .. " starting")
 local packsDir = thisDir .. "..\\..\\PalSchema\\mods\\"
 
 local ok, err = pcall(function()
+    -- three-phase pipeline: discover -> resolve -> load (see registry.lua)
     registry.loadAll(packsDir)
     events.install()
     events.startReadyWatch()
@@ -45,41 +47,24 @@ pcall(function()
     titlemenu.start()
 end)
 
--- Mod Manager UI. Open/close with F9; while open, number keys 1..9 toggle a mod.
--- (F7 avoided: it collides with media/volume keys on some systems.)
-local function bindKeys()
-    pcall(RegisterKeyBind, Key.F9, function()
+-- Mod Manager UI. Open/close with F9 (fallback; the primary entry is the title
+-- menu). The two-pane UI is mouse-driven, so no number keys are bound.
+pcall(function()
+    RegisterKeyBind(Key.F9, function()
         ExecuteInGameThread(function()
             local okk, e = pcall(modmanager.toggleWindow)
             if not okk then core.err("mod manager toggle: " .. tostring(e)) end
         end)
     end)
-    -- Number-key enum names vary; probe each and log which actually bound.
-    local numberKeys = {
-        { "1", Key.ONE }, { "2", Key.TWO }, { "3", Key.THREE }, { "4", Key.FOUR },
-        { "5", Key.FIVE }, { "6", Key.SIX }, { "7", Key.SEVEN }, { "8", Key.EIGHT },
-        { "9", Key.NINE },
-    }
-    local bound = {}
-    for i, pair in ipairs(numberKeys) do
-        local label, key = pair[1], pair[2]
-        local ok = false
-        if key ~= nil then
-            ok = pcall(RegisterKeyBind, key, function()
-                core.log("number key " .. label .. " fired")
-                ExecuteInGameThread(function() pcall(modmanager.activate, i) end)
-            end)
-        end
-        table.insert(bound, label .. (ok and "+" or "-"))
-    end
-    core.log("mod manager keys bound: F9 open; numbers " .. table.concat(bound, " "))
-end
-pcall(bindKeys)
+    core.log("mod manager key bound: F9")
+end)
 
--- Public API for other Lua mods:
---   local palsmith = require("palsmith.api")
+-- Public API for other Lua mods.
+local actions = require("palsmith.actions")
 _G.PalSmith = {
     version = core.VERSION,
-    registerAction = require("palsmith.actions").register,
+    registerHandler = actions.registerHandler,     -- ("ns:name", fn(args, ctx))
+    registerAction = actions.register,             -- DEPRECATED alias -> smith:name
     resolveId = require("palsmith.ids").resolve,
+    registry = registry,                           -- read-only: status/loadOrder/packs
 }

@@ -6,9 +6,10 @@
 -- Mod kinds:
 --   lua  -> ue4ss/Mods/<Name>/ , enabled.txt present/absent
 --   pack -> ue4ss/Mods/PalSchema/mods/<Name>/ vs .../mods_disabled/<Name>/
-local core   = require("palsmith.core")
-local json   = require("palsmith.json")
-local nui    = require("palsmith.nativeui")
+local core     = require("palsmith.core")
+local json     = require("palsmith.json")
+local nui      = require("palsmith.nativeui")
+local registry = require("palsmith.registry")
 
 local M = {}
 
@@ -26,14 +27,6 @@ local function sh(cmd)
     return ok and res or ""
 end
 
-local function listDirs(path)
-    local out = {}
-    for line in sh('dir "' .. path .. '" /b /ad'):gmatch("[^\r\n]+") do
-        if #line > 0 then table.insert(out, line) end
-    end
-    return out
-end
-
 local function fileExists(path)
     local f = io.open(path, "rb"); if f then f:close(); return true end; return false
 end
@@ -43,11 +36,35 @@ local function readJsonc(path)
     local v = json.decode(text); return v
 end
 
+-- Read a filesystem-enabled pack's id from pack.jsonc and attach its registry
+-- resolution status (the second axis: "behaviors active?").
+local function attachResolution(mod)
+    local m = readJsonc(mod.path .. "\\palsmith\\pack.jsonc")
+    if not m or type(m.id) ~= "string" then
+        mod.isPack = false            -- plain PalSchema data, not a PalSmith pack
+        return
+    end
+    mod.isPack = true
+    mod.packId = m.id
+    if mod.enabled then
+        local st = registry.status and registry.status[m.id]
+        if st then
+            mod.resState = st.state
+            mod.resReasons = st.reasons
+            mod.loadIndex = st.loadIndex
+        else
+            mod.resState = "unknown"
+        end
+    else
+        mod.resState = "data-disabled"   -- not scanned (mods_disabled/)
+    end
+end
+
 function M.scan()
     local base = modsDir()
     local mods = {}
     local skip = { PalSmith = true, PalSchema = true, shared = true, BPModLoaderMod = true, Keybinds = true }
-    for _, name in ipairs(listDirs(base)) do
+    for _, name in ipairs(core.listDirs(base)) do
         if not skip[name] and fileExists(base .. name .. "\\Scripts\\main.lua") then
             table.insert(mods, { kind = "lua", name = name,
                 enabled = fileExists(base .. name .. "\\enabled.txt"), path = base .. name })
@@ -55,11 +72,13 @@ function M.scan()
     end
     local psA = base .. "PalSchema\\mods\\"
     local psD = base .. "PalSchema\\mods_disabled\\"
-    for _, name in ipairs(listDirs(psA)) do
-        table.insert(mods, { kind = "pack", name = name, enabled = true, path = psA .. name })
+    for _, name in ipairs(core.listDirs(psA)) do
+        local mod = { kind = "pack", name = name, enabled = true, path = psA .. name }
+        attachResolution(mod); table.insert(mods, mod)
     end
-    for _, name in ipairs(listDirs(psD)) do
-        table.insert(mods, { kind = "pack", name = name, enabled = false, path = psD .. name })
+    for _, name in ipairs(core.listDirs(psD)) do
+        local mod = { kind = "pack", name = name, enabled = false, path = psD .. name }
+        attachResolution(mod); table.insert(mods, mod)
     end
     table.sort(mods, function(a, b)
         if a.kind ~= b.kind then return a.kind < b.kind end
@@ -68,19 +87,51 @@ function M.scan()
     return mods
 end
 
--- Metadata for the detail pane. Packs read palsmith/pack.jsonc + counts.
+-- Is this mod's PalSmith logic active? (second axis)
+local function behaviorsActive(mod)
+    if mod.kind ~= "pack" or not mod.isPack then return nil end
+    return mod.resState == "loaded" or mod.resState == "conflict"
+end
+
+-- Format a dependency map { ns -> range } as "a (>=1.0), b (^2)".
+local function fmtDeps(map)
+    if type(map) ~= "table" then return nil end
+    local parts = {}
+    for ns, range in pairs(map) do table.insert(parts, ns .. " (" .. tostring(range) .. ")") end
+    table.sort(parts)
+    return #parts > 0 and table.concat(parts, ", ") or nil
+end
+
+-- Metadata for the detail pane. Shows BOTH axes: Data (filesystem) and Behaviors
+-- (PalSmith resolution), plus dependency info and concrete failure reasons.
 local function metaLines(mod)
     local lines = {}
-    local function add(k, v) if v ~= nil and v ~= "" then table.insert(lines, { k = k, v = tostring(v) }) end end
+    local function add(k, v, color) if v ~= nil and v ~= "" then table.insert(lines, { k = k, v = tostring(v), color = color }) end end
     add("Name", mod.name)
     add("Type", mod.kind == "pack" and "PalSchema content pack" or "UE4SS Lua mod")
-    add("Status", mod.enabled and "Enabled" or "Disabled")
+    add("Data", mod.enabled and "Enabled" or "Disabled (removed on restart)")
+
     if mod.kind == "pack" then
         local m = readJsonc(mod.path .. "\\palsmith\\pack.jsonc")
         if m then
             add("Pack id", m.id)
             add("Version", m.version)
             add("Requires PalSmith", m.requiresSmith)
+            -- second axis
+            local active = behaviorsActive(mod)
+            if mod.enabled then
+                if active then
+                    add("Behaviors", "Active (#" .. tostring(mod.loadIndex or "?") .. " in load order)", COL.on)
+                else
+                    add("Behaviors", "Inert (" .. tostring(mod.resState) .. ")", COL.err)
+                end
+            else
+                add("Behaviors", "Inactive (data disabled)", COL.muted)
+            end
+            add("Depends", fmtDeps(m.depends))
+            add("Recommends", fmtDeps(m.recommends))
+            add("Conflicts", fmtDeps(m.conflicts))
+            add("Breaks", fmtDeps(m.breaks))
             if type(m.authors) == "table" then add("Authors", table.concat(m.authors, ", ")) end
             add("Homepage", m.homepage)
         else
@@ -89,12 +140,18 @@ local function metaLines(mod)
         local beh = readJsonc(mod.path .. "\\palsmith\\behaviors.jsonc")
         if type(beh) == "table" then
             local n = 0; for k in pairs(beh) do if k:sub(1, 1) ~= "$" then n = n + 1 end end
-            add("Behaviors", n)
+            add("Behavior ids", n)
         end
         local msh = readJsonc(mod.path .. "\\palsmith\\meshes.jsonc")
         if type(msh) == "table" then
             local n = 0; for k in pairs(msh) do if k:sub(1, 1) ~= "$" then n = n + 1 end end
             add("Runtime meshes", n)
+        end
+        -- concrete resolution reasons (missing dep, conflict, cycle...)
+        if mod.resReasons then
+            for _, r in ipairs(mod.resReasons) do
+                add("!", r, COL.err)
+            end
         end
     end
     add("Folder", mod.path)
@@ -122,6 +179,7 @@ local COL = {
     accent = { 0.98, 0.80, 0.38, 1 }, cream = { 0.96, 0.93, 0.86, 1 },
     muted = { 0.72, 0.68, 0.60, 1 }, on = { 0.55, 0.85, 0.50, 1 },
     off = { 0.80, 0.55, 0.45, 1 }, key = { 0.85, 0.72, 0.50, 1 },
+    err = { 0.90, 0.42, 0.38, 1 }, warn = { 0.95, 0.72, 0.35, 1 },
 }
 
 -- ---- panel state ----
@@ -195,8 +253,14 @@ local function renderLeft()
     if not panel then return end
     clearBox(panel.leftV)
     for i, mod in ipairs(mods) do
-        local mark = mod.enabled and "\u{25CF}  " or "\u{25CB}  " -- filled/hollow dot
-        local rowColor = mod.enabled and COL.cream or COL.muted
+        -- filled dot = data enabled, hollow = data disabled
+        local mark = mod.enabled and "\u{25CF}  " or "\u{25CB}  "
+        -- colour encodes the SECOND axis: enabled+resolved = cream; enabled but
+        -- inert (missing dep/conflict/cycle) = red; data-disabled = muted.
+        local rowColor
+        if not mod.enabled then rowColor = COL.muted
+        elseif mod.kind == "pack" and mod.isPack and behaviorsActive(mod) == false then rowColor = COL.err
+        else rowColor = COL.cream end
         local row = nui.clickableRow(panel.tree, panel.pc, mark .. mod.name, function()
             selected = i
             renderRight()
@@ -220,7 +284,7 @@ renderRight = function()
         pcall(function() ksize:SetContent(nui.text(panel.tree, line.k, 14, COL.key)) end)
         local row = nui.hbox(panel.tree)
         nui.addH(row, ksize)
-        nui.addH(row, nui.text(panel.tree, line.v, 14, COL.cream))
+        nui.addH(row, nui.text(panel.tree, line.v, 14, line.color or COL.cream))
         nui.addV(panel.rightV, row, 2)
     end
     -- toggle button (same left-aligned native row style)

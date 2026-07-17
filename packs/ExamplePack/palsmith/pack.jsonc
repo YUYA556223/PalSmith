@@ -1,11 +1,20 @@
-// PalSmith pack manifest.
-// $schema gives editors autocompletion + validation.
+// PalSmith pack manifest (v2). $schema gives editors autocompletion + validation.
+//
+// Note the namespace split: this pack's id is "example" (so ids resolve to
+// "example_Potion"), but the PalSchema mod FOLDER is "ExamplePack" and the
+// $resource icon path uses "ExamplePack" — those are independent namespaces.
 {
     "$schema": "https://raw.githubusercontent.com/YUYA556223/PalSmith/main/schemas/pack.schema.json",
+    "formatVersion": 2,
     "id": "example",
     "name": "PalSmith Example Pack",
-    "version": "0.1.0",
-    "requiresSmith": "0.1",
+    "version": "0.2.0",
+    "requiresSmith": ">=0.2",           // semver range; ">=0.2" reads as ">=0.2.0"
+    // Fabric-style dependency maps (packId -> version range). All optional.
+    // "depends":    { "somelib": "^1.0.0" },   // hard: fail to activate if unmet
+    // "recommends": { "prettyhud": ">=0.3" },  // soft: warn if unmet
+    // "conflicts":  { "oldpack": "<1.0.0" },   // soft: warn if present
+    // "breaks":     { "brokenpack": "*" },     // hard: fail if present
     "authors": ["PalSmith"],
     "homepage": "https://github.com/YUYA556223/PalSmith"
 }

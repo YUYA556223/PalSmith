@@ -1,0 +1,2 @@
+{ "formatVersion": 2, "id": "taddon", "name": "Test Addon", "version": "1.0.0",
+  "requiresSmith": ">=0.2", "depends": { "example": ">=0.2" } }

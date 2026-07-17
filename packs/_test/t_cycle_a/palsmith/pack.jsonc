@@ -1,0 +1,1 @@
+{ "formatVersion": 2, "id": "tcyclea", "name": "Cycle A", "version": "1.0.0", "depends": { "tcycleb": "*" } }

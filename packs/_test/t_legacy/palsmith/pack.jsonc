@@ -1,0 +1,1 @@
+{ "id": "tlegacy", "name": "Test Legacy", "version": "1.0.0", "requiresSmith": "0.1", "dependencies": ["example"] }

@@ -1,0 +1,2 @@
+{ "formatVersion": 2, "id": "tmissing", "name": "Test Missing", "version": "1.0.0",
+  "depends": { "nosuchpack": ">=1.0" } }

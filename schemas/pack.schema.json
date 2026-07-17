@@ -6,21 +6,46 @@
     "required": ["id"],
     "properties": {
         "$schema": { "type": "string" },
+        "formatVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Manifest format. Current runtime understands 2. Absent = 1 (legacy)."
+        },
         "id": {
             "type": "string",
             "pattern": "^[A-Za-z0-9_]+$",
             "description": "Pack namespace. All your ids become '<id>:<Name>' and resolve to the game row '<id>_<Name>'."
         },
         "name": { "type": "string", "description": "Human-readable pack name." },
-        "version": { "type": "string", "description": "Semver of this pack." },
-        "requiresSmith": { "type": "string", "description": "Minimum PalSmith version, e.g. \"0.1\"." },
+        "version": { "type": "string", "description": "Semver of this pack, e.g. \"1.2.0\"." },
+        "requiresSmith": {
+            "type": "string",
+            "description": "Semver range of PalSmith, e.g. \">=0.2\" or \"^1.0.0\". A bare \"0.1\" reads as \">=0.1.0\"."
+        },
+        "depends": { "$ref": "#/definitions/depMap", "description": "Hard dependencies (packId -> range). Unmet = pack inactive." },
+        "recommends": { "$ref": "#/definitions/depMap", "description": "Soft dependencies (packId -> range). Unmet = warning only." },
+        "conflicts": { "$ref": "#/definitions/depMap", "description": "Soft conflicts (packId -> range). Present = warning." },
+        "breaks": { "$ref": "#/definitions/depMap", "description": "Hard conflicts (packId -> range). Present = pack inactive." },
+        "provides": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^[A-Za-z0-9_]+:[A-Za-z0-9_]+$" },
+            "description": "Optional authoritative list of content ids ('mypack:Thing') this pack provides."
+        },
         "authors": { "type": "array", "items": { "type": "string" } },
         "homepage": { "type": "string", "description": "URL of the pack's repository or mod page." },
         "dependencies": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "Ids of other PalSmith packs this pack requires."
+            "deprecated": true,
+            "description": "DEPRECATED: use 'depends' (map of id -> range). Kept for v0.1 packs."
         }
     },
-    "additionalProperties": false
+    "additionalProperties": false,
+    "definitions": {
+        "depMap": {
+            "type": "object",
+            "patternProperties": { "^[A-Za-z0-9_]+$": { "type": "string" } },
+            "additionalProperties": false
+        }
+    }
 }

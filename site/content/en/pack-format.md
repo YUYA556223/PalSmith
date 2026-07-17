@@ -36,14 +36,42 @@ Rules:
 ```json
 {
   "$schema": "https://raw.githubusercontent.com/YUYA556223/PalSmith/main/schemas/pack.schema.json",
+  "formatVersion": 2,
   "id": "mypack",
   "name": "My Pack",
   "version": "1.0.0",
-  "requiresSmith": "0.1",
+  "requiresSmith": ">=0.2",
+  "depends":    { "somelib": "^1.0.0" },
+  "recommends": { "prettyhud": ">=0.3" },
+  "conflicts":  { "oldpack": "<1.0.0" },
+  "breaks":     { "brokenpack": "*" },
   "authors": ["you"],
   "homepage": "https://github.com/you/mypack"
 }
 ```
+
+## Dependencies & load order
+
+PalSmith resolves dependencies at startup (Fabric-style). Each field is a map of
+`packId -> semver range`:
+
+| Field | Meaning | Unmet |
+|---|---|---|
+| `depends` | hard requirement | pack becomes **inactive** |
+| `recommends` | soft requirement | warning only |
+| `conflicts` | soft incompatibility (present + in range) | warning only |
+| `breaks` | hard incompatibility | pack becomes **inactive** |
+
+`requiresSmith` is a range against the PalSmith runtime version (a bare `"0.1"`
+reads as `">=0.1.0"`). Ranges support `>= <= > < = ^ ~`, `x`/`*` wildcards, and
+`||`. Packs load in **topological order**; cycles are detected and reported.
+
+**Inactive ≠ removed.** Because PalSchema applies a pack's DataTable rows before
+PalSmith runs, an unmet dependency doesn't delete the pack's items — it just
+stops PalSmith from registering that pack's *behaviors*. The Mod Manager shows
+both axes: **Data** (enabled/disabled on disk) and **Behaviors** (active/inert).
+To truly remove a pack's data, disable it in the Mod Manager (moves the folder)
+and restart.
 
 ## Editor validation
 

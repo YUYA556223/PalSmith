@@ -5,9 +5,12 @@
 
 - 名称: **PalSmith**(2026-07-16 決定。仮称PalForgeは既存のブリーディング計算ツール
   [palbreedingcalc.com](https://palbreedingcalc.com/) と衝突するため回避。PalWorksもAnimation Frameworkが存在)
-- ステータス: **v0.1.0 クライアント実機検証済み**(2026-07-17)。ExamplePackでE2E動作確認:
-  World-Readyゲート→`onPlace -> example_Bench`ログ+ポーションonUse/ベンチonInteract/クリスタル(ランタイムメッシュ)をユーザー確認。
-  C5(UI)はUE5環境構築待ち、専用サーバー展開は未実施
+- ステータス: **v0.2 基盤化(2026-07-17〜)**。v0.1.0でC1〜C4+ランタイムメッシュ+UI(タイトルメニュー統合・2ペインMod Manager)を実機確認済み。
+  v0.2で**F1/F2実装完了**: Fabric式依存解決(depends/recommends/conflicts/breaks + semver範囲、トポロジカルソート、循環検出)、
+  中央IDレジストリ(衝突検出+スナップショット)、アクション一般化(`{handler, args}`+後方互換シム)、
+  永続化プリミティブ(store.lua)、Mod Managerの2軸status表示。新モジュール: semver/eventspec/manifest/resolver/idregistry/store。
+  **PalSchema行はランタイムで剥がせない**ため、解決フェーズの無効化=挙動登録スキップ(データ削除はフォルダ移動)。
+  `onTick`/`onCraft`は予約(未ディスパッチ)、cooldown永続化は次フェーズ。
   - ランタイム: `src/PalSmith/`(UE4SS Luaモッド: ID解決/レジストリ/イベント/アクション/ランタイムメッシュ)
   - サンプル兼テンプレ: `packs/ExamplePack/`、スキーマ: `schemas/`、ドキュメントサイト: `site/`(GitHub Pages, EN/JA)
   - PoC群は `deprecated/poc/` へ移動(検証記録として保存)

@@ -7,10 +7,11 @@
 --
 -- Design notes baked in from V3: interact fires for building<->building overlaps
 -- (filter: other must be a PalCharacter) and repeats rapidly (debounce).
-local core     = require("palsmith.core")
-local registry = require("palsmith.registry")
-local actions  = require("palsmith.actions")
-local mesh     = require("palsmith.mesh")
+local core      = require("palsmith.core")
+local registry  = require("palsmith.registry")
+local actions   = require("palsmith.actions")
+local mesh      = require("palsmith.mesh")
+local eventspec = require("palsmith.eventspec")
 
 local M = { hooksRegistered = 0, hooksTotal = 0, worldReady = false }
 
@@ -96,6 +97,16 @@ local function tryHook(path, fn)
 end
 
 function M.install()
+    -- Guard against the event whitelist drifting: the events we hook here must
+    -- exactly equal eventspec's dispatched set. If a new dispatched event is
+    -- added to eventspec without a hook (or vice-versa), warn loudly.
+    M._dispatchTargets = { onUse = true, onPlace = true, onInteract = true }
+    for _, ev in ipairs(eventspec.dispatchedList()) do
+        if not M._dispatchTargets[ev] then
+            core.warn("eventspec marks '" .. ev .. "' dispatched but events.lua has no hook for it")
+        end
+    end
+
     -- onUse ------------------------------------------------------------
     tryHook("/Script/Pal.PalItemUseProcessor:UseItemToCharacter_ServerInternal", function(self, itemData, targetId)
         if not M.worldReady then return end

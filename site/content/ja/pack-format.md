@@ -36,14 +36,39 @@ MyPack/
 ```json
 {
   "$schema": "https://raw.githubusercontent.com/YUYA556223/PalSmith/main/schemas/pack.schema.json",
+  "formatVersion": 2,
   "id": "mypack",
   "name": "My Pack",
   "version": "1.0.0",
-  "requiresSmith": "0.1",
+  "requiresSmith": ">=0.2",
+  "depends":    { "somelib": "^1.0.0" },
+  "recommends": { "prettyhud": ">=0.3" },
+  "conflicts":  { "oldpack": "<1.0.0" },
+  "breaks":     { "brokenpack": "*" },
   "authors": ["you"],
   "homepage": "https://github.com/you/mypack"
 }
 ```
+
+## 依存関係とロード順
+
+PalSmithは起動時に依存を解決します(Fabric式)。各フィールドは `packId -> semver範囲` のマップ:
+
+| フィールド | 意味 | 未充足時 |
+|---|---|---|
+| `depends` | 必須 | パックが**非アクティブ** |
+| `recommends` | 推奨 | 警告のみ |
+| `conflicts` | 軟衝突(該当版が存在) | 警告のみ |
+| `breaks` | 硬衝突 | パックが**非アクティブ** |
+
+`requiresSmith`はPalSmith本体バージョンへの範囲(素の`"0.1"`は`">=0.1.0"`)。
+範囲は `>= <= > < = ^ ~`、`x`/`*` ワイルドカード、`||` に対応。パックは
+**トポロジカル順**で読み込まれ、循環は検出・報告されます。
+
+**非アクティブ≠削除。** PalSchemaはPalSmithより先に行を適用するため、依存未充足でも
+アイテム自体は消えず、PalSmithがそのパックの**Behavior登録をスキップ**するだけです。
+Mod Managerは2軸(**Data**=ディスク上の有効/無効、**Behaviors**=アクティブ/非アクティブ)を
+表示します。データを本当に消すにはMod Managerで無効化(フォルダ移動)して再起動します。
 
 ## エディタでの検証
 

@@ -1,1 +1,3 @@
 tools/ue/introspect_out.txt
+src/PalSmith/state/
+packs/_test/*/palsmith/*.tmp

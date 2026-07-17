@@ -10,10 +10,27 @@ It runs as a companion to [PalSchema](https://github.com/Okaetsu/PalSchema): dat
 definitions are delegated to PalSchema, while PalSmith provides **behaviors, UI,
 actions/events, and the content-pack ecosystem** on top.
 
-- Status: **v0.1 runtime** — all core concepts proven in-game, UI layer in progress
+- Status: **v0.2 runtime** — Fabric-style dependency resolver, central id registry,
+  `{handler, args}` behaviors, and a two-pane Mod Manager on the title screen
 - Documentation: **[GitHub Pages site](https://yuya556223.github.io/PalSmith/)** (EN/JA)
 - Design doc: [docs/plan.md](docs/plan.md) (Japanese — working document)
 - Planned distribution: Nexus Mods (Vortex support) / manual install
+
+## Dependencies & load order
+
+Packs declare Fabric-style dependencies in `pack.jsonc` (semver ranges), and
+PalSmith resolves them at startup — topological load order, cycle detection, and
+per-pack status surfaced in the Mod Manager:
+
+```jsonc
+{
+  "formatVersion": 2, "id": "mypack", "version": "1.0.0", "requiresSmith": ">=0.2",
+  "depends":    { "somelib": "^1.0.0" },   // hard  (inactive if unmet)
+  "recommends": { "prettyhud": ">=0.3" },   // soft  (warn if unmet)
+  "conflicts":  { "oldpack": "<1.0.0" },    // soft  (warn if present)
+  "breaks":     { "brokenpack": "*" }       // hard  (inactive if present)
+}
+```
 
 ## Quick start
 
@@ -34,7 +51,7 @@ ids (`mypack:Thing`), declarative behaviors and optional runtime OBJ meshes:
 {
   "mypack:Bench": {
     "onInteract": [
-      { "action": "give_item", "item": "Stone", "count": 5, "cooldownSec": 30 }
+      { "handler": "smith:give_item", "args": { "item": "Stone", "count": 5 }, "cooldownSec": 30 }
     ]
   }
 }
