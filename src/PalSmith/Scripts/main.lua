@@ -87,3 +87,20 @@ _G.PalSmith = {
 -- Load trusted extension scripts INTO this VM (companion mods like PalLogistics).
 -- Must run after _G.PalSmith is set so extensions see the API.
 pcall(function() require("palsmith.extloader").loadAll(thisDir) end)
+
+-- Catalog dumper (community reference + id discovery). F8 dumps every DataTable's
+-- row names to <Mods>/PalSmith/catalog/. Must be in a world (DataTables loaded).
+local catalog = require("palsmith.catalog")
+_G.PalSmith.dumpCatalog = catalog.dumpDataTables
+pcall(function()
+    RegisterKeyBind(Key.F8, function()
+        ExecuteInGameThread(function()
+            local okc, e = pcall(function()
+                local r = catalog.dumpDataTables()
+                if r then catalog.logBuildIds() end
+            end)
+            if not okc then core.err("catalog dump: " .. tostring(e)) end
+        end)
+    end)
+    core.log("catalog key bound: F8 (dump DataTables)")
+end)

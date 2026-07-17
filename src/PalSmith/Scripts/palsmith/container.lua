@@ -24,11 +24,15 @@ local containerCache = setmetatable({}, { __mode = "k" })
 -- Returns the UPalItemContainer or nil.
 local function resolveContainer(actor)
     if containerCache[actor] then return containerCache[actor] end
+    -- Chest storage lives in the actor's concrete model (UPalMapObjectItemChestModel
+    -- / UPalMapObjectItemStorageModel). Reach it via GetModel()/GetConcreteModel()
+    -- then GetItemContainer(); several accessor shapes are tried (catalog: classes.json).
     local found = nil
     local tries = {
         function() return actor:GetItemContainer() end,
         function() return actor:GetModel():GetItemContainer() end,
         function() return actor:GetModel():GetConcreteModel():GetItemContainer() end,
+        function() return actor:GetModel():GetConcreteModel(true):GetItemContainer() end,
         function() return actor.MapObjectModel:GetItemContainer() end,
     }
     for _, fn in ipairs(tries) do
