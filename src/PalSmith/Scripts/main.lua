@@ -18,6 +18,7 @@ local core       = require("palsmith.core")
 local registry   = require("palsmith.registry")
 local events     = require("palsmith.events")
 local modmanager = require("palsmith.modmanager")
+local titlemenu  = require("palsmith.titlemenu")
 
 core.log("PalSmith v" .. core.VERSION .. " starting")
 
@@ -34,6 +35,15 @@ if not ok then
 else
     core.log("ready")
 end
+
+-- Title-menu integration: a native "PalSmith" entry that opens the Mod Manager.
+-- This is the primary entry point; the F9 keybind below is a fallback.
+pcall(function()
+    titlemenu.addEntry("PalSmith", function()
+        pcall(modmanager.toggleWindow)
+    end)
+    titlemenu.start()
+end)
 
 -- Mod Manager UI. Open/close with F9; while open, number keys 1..9 toggle a mod.
 -- (F7 avoided: it collides with media/volume keys on some systems.)

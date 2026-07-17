@@ -13,33 +13,58 @@ local function widgetClass(w)
     return ok and tostring(c) or "?"
 end
 
+local function widgetName(w)
+    local ok, n = pcall(function() return w:GetName() end)
+    if ok and n then return tostring(n) end
+    ok, n = pcall(function() return w:GetFName():ToString() end)
+    if ok and n then return tostring(n) end
+    -- last segment of full name
+    local full = ""
+    pcall(function() full = w:GetFullName() end)
+    return full:match("[%.:]([%w_]+)$") or full or "?"
+end
+
 -- Recursively describe a widget subtree. Uses GetChildrenCount/GetChildAt on
 -- PanelWidget; TextBlock/Button are leaves we tag specially.
 local function describe(lines, w, depth)
-    if not (w and w:IsValid()) or depth > 8 then return end
+    if not (w and w:IsValid()) or depth > 14 then return end
     local indent = string.rep("  ", depth)
     local cls = widgetClass(w)
-    local name = "?"
-    pcall(function() name = w:GetName() end)
+    local name = widgetName(w)
     local tag = ""
     if cls:find("Button") then tag = "  <BUTTON>"
     elseif cls:find("TextBlock") or cls:find("Text") then
         tag = "  <TEXT>"
         pcall(function() tag = tag .. ' "' .. w:GetText():ToString() .. '"' end)
     elseif cls:find("VerticalBox") or cls:find("HorizontalBox") or cls:find("Panel")
-        or cls:find("ListView") or cls:find("ScrollBox") then tag = "  <CONTAINER>" end
+        or cls:find("ListView") or cls:find("ScrollBox") then tag = "  <CONTAINER>"
+    elseif cls:find("WBP_") or cls:find("UserWidget") then tag = "  <USERWIDGET>" end
     table.insert(lines, string.format("%s%s : %s%s", indent, name, cls, tag))
 
-    -- try panel children
+    -- 1) if this is a UserWidget, descend into its own WidgetTree
+    local isPanel = false
+    pcall(function() isPanel = w:GetChildrenCount() ~= nil end)
+    pcall(function()
+        local tree = w.WidgetTree
+        if tree and tree:IsValid() then
+            local root = tree.RootWidget
+            if root and root:IsValid() then
+                table.insert(lines, indent .. "  [WidgetTree]")
+                describe(lines, root, depth + 2)
+            end
+        end
+    end)
+
+    -- 2) panel children
     local n = 0
     pcall(function() n = w:GetChildrenCount() end)
-    for i = 0, n - 1 do
+    for i = 0, (n or 0) - 1 do
         local child
         local ok = pcall(function() child = w:GetChildAt(i) end)
         if ok and child then describe(lines, child, depth + 1) end
     end
-    -- Border/NamedSlot single content
-    if n == 0 then
+    -- 3) Border/single-content
+    if (n or 0) == 0 then
         pcall(function()
             local c = w:GetContent()
             if c and c:IsValid() then describe(lines, c, depth + 1) end
