@@ -83,3 +83,7 @@ _G.PalSmith = {
     registry = registry,                           -- read-only: status/loadOrder/packs
     entity = entity,                               -- read-only: instances/instanceForActor
 }
+
+-- Load trusted extension scripts INTO this VM (companion mods like PalLogistics).
+-- Must run after _G.PalSmith is set so extensions see the API.
+pcall(function() require("palsmith.extloader").loadAll(thisDir) end)
