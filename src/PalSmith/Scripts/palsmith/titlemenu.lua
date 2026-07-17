@@ -112,22 +112,54 @@ local function injectEntry(root, vbox, e)
     local sibling = findByName(root, "SizeBox_4")
     dumpAlignment(root)
     local sizeBox = StaticConstructObject(StaticFindObject("/Script/UMG.SizeBox"), vbox)
-    local w, h
+    -- Read the sibling's overrides via PROPERTIES (the getters returned nil last
+    -- time). Native SizeBoxes have a fixed width, which is why their left-anchored
+    -- button content sits left; without it our button stretches and centres.
+    local w, h, wOv, hOv
     if sibling and sibling:IsValid() then
-        pcall(function() w = sibling:GetWidthOverride() end)
-        pcall(function() h = sibling:GetHeightOverride() end)
+        pcall(function() w = sibling.WidthOverride end)
+        pcall(function() h = sibling.HeightOverride end)
+        pcall(function() wOv = sibling.bOverride_WidthOverride end)
+        pcall(function() hOv = sibling.bOverride_HeightOverride end)
     end
-    if w and w > 0 then pcall(function() sizeBox:SetWidthOverride(w) end) end
-    if h and h > 0 then pcall(function() sizeBox:SetHeightOverride(h) end) end
+    core.log("SIBSIZE w=" .. tostring(w) .. " h=" .. tostring(h)
+        .. " wOv=" .. tostring(wOv) .. " hOv=" .. tostring(hOv))
+    if w and w > 0 then
+        pcall(function() sizeBox.WidthOverride = w; sizeBox.bOverride_WidthOverride = true end)
+        pcall(function() sizeBox:SetWidthOverride(w) end)
+    end
+    if h and h > 0 then
+        pcall(function() sizeBox.HeightOverride = h; sizeBox.bOverride_HeightOverride = true end)
+        pcall(function() sizeBox:SetHeightOverride(h) end)
+    end
     pcall(function() sizeBox:SetContent(btn) end)
 
+    -- Slot styling shared by our entry and the re-added Exit entry.
+    local function styleSlot(slot)
+        pcall(function() slot:SetHorizontalAlignment(1) end) -- HAlign_Left (setter)
+        pcall(function() slot.HorizontalAlignment = 1 end)   -- and property
+        pcall(function() slot:SetPadding({ Left = 0, Top = 3, Right = 0, Bottom = 3 }) end)
+        pcall(function() slot.Padding = { Left = 0, Top = 3, Right = 0, Bottom = 3 } end)
+    end
+
     local slot = vbox:AddChildToVerticalBox(sizeBox)
-    -- Set alignment via BOTH setter and direct property assignment (UE4SS enum
-    -- setters can silently no-op, leaving the default HAlign_Fill which centers).
-    pcall(function() slot:SetHorizontalAlignment(1) end)          -- HAlign_Left
-    pcall(function() slot.HorizontalAlignment = 1 end)
-    pcall(function() slot:SetPadding({ Left = 0, Top = 3, Right = 0, Bottom = 3 }) end)
-    pcall(function() slot.Padding = { Left = 0, Top = 3, Right = 0, Bottom = 3 } end)
+    styleSlot(slot)
+
+    -- Reorder so our entry sits just above "Exit Game": VerticalBox has no insert,
+    -- so move the Exit entry to the end (after ours) by removing + re-adding it.
+    pcall(function()
+        local exitBtn = findByName(root, "WBP_Title_MenuButton_ExitGame")
+        if exitBtn and exitBtn:IsValid() then
+            local exitBox = exitBtn:GetParent() -- the SizeBox wrapping the exit button
+            if exitBox and exitBox:IsValid() then
+                vbox:RemoveChild(exitBox)
+                local exitSlot = vbox:AddChildToVerticalBox(exitBox)
+                styleSlot(exitSlot)
+                core.log("title: moved Exit entry below PalSmith")
+            end
+        end
+    end)
+
     local readback = "?"
     pcall(function() readback = tostring(slot.HorizontalAlignment) end)
     core.log("title entry '" .. e.label .. "' injected (HAlign readback=" .. readback .. ")")
