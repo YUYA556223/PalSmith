@@ -88,19 +88,42 @@ _G.PalSmith = {
 -- Must run after _G.PalSmith is set so extensions see the API.
 pcall(function() require("palsmith.extloader").loadAll(thisDir) end)
 
--- Catalog dumper (community reference + id discovery). F8 dumps every DataTable's
--- row names to <Mods>/PalSmith/catalog/. Must be in a world (DataTables loaded).
+-- Catalog dumper (community reference + id discovery). Runs automatically once
+-- per world (below); also callable via PalSmith.dumpCatalog().
 local catalog = require("palsmith.catalog")
 _G.PalSmith.dumpCatalog = catalog.dumpDataTables
+
+-- Auto-dump the catalog ONCE after a world is ready (function keys are flaky, so
+-- don't depend on F8). ~15s in so DataTables are loaded. One-shot.
+pcall(function()
+    local events = require("palsmith.events")
+    local done = false
+    local waited = 0
+    LoopAsync(1000, function()
+        if done then return true end
+        ExecuteInGameThread(function()
+            if not events.worldReady then return end
+            waited = waited + 1
+            if waited >= 15 then
+                done = true
+                pcall(function() catalog.dumpDataTables(); catalog.logBuildIds() end)
+            end
+        end)
+        return false
+    end)
+end)
+
+-- Safety valve: F8 force-closes every PalSmith-created panel, so a stuck overlay
+-- can always be dismissed. (F6/F7 are volume keys on some keyboards.)
+-- NOTE: function keys are dev conveniences; the primary UI entry is the title-menu
+-- "PalSmith" button (no key) + in-world interaction.
 pcall(function()
     RegisterKeyBind(Key.F8, function()
         ExecuteInGameThread(function()
-            local okc, e = pcall(function()
-                local r = catalog.dumpDataTables()
-                if r then catalog.logBuildIds() end
-            end)
-            if not okc then core.err("catalog dump: " .. tostring(e)) end
+            pcall(function() require("palsmith.entityui").close() end)
+            pcall(function() modmanager.close() end)
+            core.log("closed all PalSmith panels (F8)")
         end)
     end)
-    core.log("catalog key bound: F8 (dump DataTables)")
+    core.log("close-all key bound: F8")
 end)

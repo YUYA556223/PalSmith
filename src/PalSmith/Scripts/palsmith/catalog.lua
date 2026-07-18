@@ -49,15 +49,16 @@ end
 -- Dump every loaded UDataTable's row names. Returns a summary table.
 function M.dumpDataTables()
     local dir = catalogDir()
+    core.log("catalog: dumping DataTables to " .. dir .. "datatables\\ ...")
     core.ensureDir(dir)
     core.ensureDir(dir .. "datatables\\")
 
-    local tables = {}
     local okFind, all = pcall(FindAllOf, "DataTable")
     if not okFind or type(all) ~= "table" then
-        core.warn("catalog: FindAllOf(DataTable) failed")
+        core.warn("catalog: FindAllOf(DataTable) failed (" .. tostring(all) .. ")")
         return nil
     end
+    core.log("catalog: found " .. #all .. " DataTable objects")
 
     local index = {}
     local friendly = {}

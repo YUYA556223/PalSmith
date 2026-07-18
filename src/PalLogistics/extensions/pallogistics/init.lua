@@ -30,7 +30,10 @@ PalSmith.defineEntity{
     tickInterval = 4,
     components = { itemHandler = { kind = "nativeContainer" } },
     onLoad = function(self) log("warehouse online @ " .. self.key) end,
-    onInteract = function(self) self:openMenu() end,
+    -- NOTE: no onInteract=openMenu — a vanilla chest already has its own native
+    -- UI, and overlaying ours hijacks/blocks it. The warehouse's value here is
+    -- the itemHandler (for pipes) + passive onTick. A dedicated entity-menu demo
+    -- belongs on a NON-chest machine (which has no native UI).
     onTick = function(self)
         local ih = self:getComponent("itemHandler"); if not ih then return end
         local n = ih:count("Wood")
