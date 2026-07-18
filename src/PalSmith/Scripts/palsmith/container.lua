@@ -16,28 +16,35 @@ M.WRITES_ENABLED = false  -- flip on only in a throwaway world (Task: container 
 -- weak actor -> UPalItemContainer cache
 local containerCache = setmetatable({}, { __mode = "k" })
 
--- Resolve the UPalItemContainer for a placed chest/storage actor. Multiple paths
--- are tried (exact chest resolution is game-version-specific — confirmed in-game):
---   1. actor's concrete model exposes GetItemContainer()
---   2. actor's MapObjectModel / GetModel() exposes it
---   3. (future) UPalItemContainerManager:TryGetContainer(containerId)
--- Returns the UPalItemContainer or nil.
+-- Resolve the UPalItemContainer for a placed chest/storage actor.
+-- Confirmed path (Pal.hpp CXXHeaderDump + in-game CONTDIAG):
+--   actor:GetModel()                       -> UPalMapObjectModel
+--        :GetConcreteModel(true)           -> UPalMapObjectItemChestModel  (bIsForce arg REQUIRED)
+--        :GetItemContainerModule()         -> UPalMapObjectItemContainerModule
+--        :GetContainer()                   -> UPalItemContainer
+-- The concrete model itself has no GetItemContainer(); the container lives on the
+-- item-container MODULE (also reachable via .TargetContainer / TryGetContainer()).
+-- Fallbacks kept for other storage model shapes.
+local function concreteModel(actor)
+    local ok, m = pcall(function() return actor:GetModel():GetConcreteModel(true) end)
+    if ok and m and m:IsValid() then return m end
+    return nil
+end
+
 local function resolveContainer(actor)
     if containerCache[actor] then return containerCache[actor] end
-    -- Chest storage lives in the actor's concrete model (UPalMapObjectItemChestModel
-    -- / UPalMapObjectItemStorageModel). Reach it via GetModel()/GetConcreteModel()
-    -- then GetItemContainer(); several accessor shapes are tried (catalog: classes.json).
     local found = nil
     local tries = {
-        function() return actor:GetItemContainer() end,
-        function() return actor:GetModel():GetItemContainer() end,
-        function() return actor:GetModel():GetConcreteModel():GetItemContainer() end,
-        function() return actor:GetModel():GetConcreteModel(true):GetItemContainer() end,
-        function() return actor.MapObjectModel:GetItemContainer() end,
+        -- primary: concrete model -> item-container module -> container
+        function() return concreteModel(actor):GetItemContainerModule():GetContainer() end,
+        -- property fallback on the module
+        function() return concreteModel(actor):GetItemContainerModule().TargetContainer end,
+        -- access-interface fallback
+        function() return concreteModel(actor):GetItemContainerAccess():GetItemContainer() end,
     }
     for _, fn in ipairs(tries) do
         local ok, c = pcall(fn)
-        if ok and c and c:IsValid() then found = c; break end
+        if ok and c and c.IsValid and c:IsValid() then found = c; break end
     end
     if found then containerCache[actor] = found end
     return found
@@ -48,6 +55,32 @@ local function slotItemId(slot)
     local ok, s = pcall(function() return slot:GetItemId().StaticId:ToString() end)
     if ok and s and #s > 0 then return s end
     return nil
+end
+
+-- One-shot diagnostic: log how to reach a placed chest's UPalItemContainer, so we
+-- can nail the exact accessor path on this game version. Call from onLoad once.
+local diagnosed = {}
+function M.diagnose(actor, tag)
+    if not actor or diagnosed[tag or "x"] then return end
+    diagnosed[tag or "x"] = true
+    local function probe(name, fn)
+        local ok, v = pcall(fn)
+        local desc = "nil"
+        if ok and v then
+            local okn, cls = pcall(function() return v:GetClass():GetFullName() end)
+            desc = okn and tostring(cls) or "valid(no class)"
+        elseif not ok then desc = "err:" .. tostring(v):sub(1, 60) end
+        core.log("CONTDIAG " .. (tag or "") .. " " .. name .. " -> " .. desc)
+    end
+    probe("concrete(true)", function() return actor:GetModel():GetConcreteModel(true) end)
+    probe("concrete:GetItemContainerModule()", function() return actor:GetModel():GetConcreteModel(true):GetItemContainerModule() end)
+    probe("module:GetContainer()", function() return actor:GetModel():GetConcreteModel(true):GetItemContainerModule():GetContainer() end)
+    probe("module.TargetContainer", function() return actor:GetModel():GetConcreteModel(true):GetItemContainerModule().TargetContainer end)
+    -- confirm reads work end-to-end on this container
+    local ok, n = pcall(function()
+        return actor:GetModel():GetConcreteModel(true):GetItemContainerModule():GetContainer():Num()
+    end)
+    core.log("CONTDIAG " .. (tag or "") .. " container:Num() -> " .. (ok and tostring(n) or "err"))
 end
 
 -- ---- ItemHandler handle ----

@@ -17,19 +17,29 @@ These are class NAMES. The concrete content ids (item ids like `Wood`, build ids
 like the chest's) are DataTable **row names**, which live in the game data, not
 the header — dump those in-game (below).
 
-## Runtime (generated in-game) — DataTable row dump
+## Runtime (checked in + regenerable) — DataTable row dump
 
-PalSmith ships a catalog dumper. In a loaded world, press **F8** (or call
-`PalSmith.dumpCatalog()`). It enumerates every loaded `UDataTable` via
-`GetRowNames()` and writes:
+`datatables/` here is a full dump of **390 game DataTables** (~2.4 MB), generated
+by PalSmith's catalog dumper. Each file is `{ table, count, rows[] }` — the row
+names are the concrete ids modders need. Highlights (`index.json` → `friendly`):
 
-- `<Mods>/PalSmith/catalog/datatables/<TableName>.json` — `{ table, count, rows[] }`
-  per table (e.g. `DT_ItemDataTable.json` = all item static ids,
-  `DT_BuildObjectDataTable.json` = all build-object ids).
-- `<Mods>/PalSmith/catalog/index.json` — table→rowcount, plus `friendly`
-  shortcuts (item/build/pal/tech tables auto-identified).
+| what | table | rows |
+|---|---|---|
+| items (static ids, e.g. `Wood`) | `DT_ItemDataTable` | 2468 |
+| build objects (e.g. `ItemChest`) | `DT_BuildObjectDataTable` | 501 |
+| pals | `DT_PalMonsterParameter` | 753 |
+| tech unlocks | `DT_TechnologyRecipeUnlock` | 593 |
 
-Copy the generated `datatables/` here to contribute the id lists to the repo.
+Also inside: recipes (`DT_ItemRecipeDataTable`), icons (`DT_ItemIconDataTable`,
+`DT_BuildObjectIconDataTable`), localized names/descriptions (`DT_ItemNameText`,
+`DT_UI_Common_Text`), and 380+ more.
+
+**Regenerate** (any game version): the dumper runs **automatically ~15s after a
+world is ready** (no keypress), or call `PalSmith.dumpCatalog()`. It enumerates
+every loaded `UDataTable` (row names via `UDataTable:GetRowNames()`, with a
+`UDataTableFunctionLibrary:GetDataTableRowNames` fallback) and writes to
+`<Mods>/PalSmith/catalog/`. Copy `datatables/` + `index.json` here to refresh
+the checked-in snapshot.
 
 ## Why PalSmith catalogs
 

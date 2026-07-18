@@ -29,7 +29,14 @@ PalSmith.defineEntity{
     displayName = "Warehouse",
     tickInterval = 4,
     components = { itemHandler = { kind = "nativeContainer" } },
-    onLoad = function(self) log("warehouse online @ " .. self.key) end,
+    onLoad = function(self)
+        log("warehouse online @ " .. self.key)
+        -- one-shot diagnostic: how to reach this chest's UPalItemContainer
+        pcall(function()
+            local ok, container = pcall(require, "palsmith.container")
+            if ok and self.actor then container.diagnose(self.actor, "chest") end
+        end)
+    end,
     -- NOTE: no onInteract=openMenu — a vanilla chest already has its own native
     -- UI, and overlaying ours hijacks/blocks it. The warehouse's value here is
     -- the itemHandler (for pipes) + passive onTick. A dedicated entity-menu demo
